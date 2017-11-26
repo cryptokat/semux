@@ -6,7 +6,6 @@
  */
 package org.semux;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,7 +14,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.semux.cli.SemuxCLI;
 import org.semux.gui.SemuxGUI;
-import uk.org.lidalia.slf4jtest.TestLoggerFactoryResetRule;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,9 +28,6 @@ import static org.powermock.api.mockito.PowerMockito.*;
 @PowerMockRunnerDelegate(Parameterized.class)
 @PrepareForTest({ ProcessBuilder.class, Wrapper.class })
 public class WrapperTest {
-
-    @Rule
-    public TestLoggerFactoryResetRule testLoggerFactoryResetRule = new TestLoggerFactoryResetRule();
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() {

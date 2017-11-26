@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 
 /**
  * This is a process wrapper mainly created for dynamic allocation of the
@@ -34,12 +33,18 @@ public class Wrapper {
         GUI, CLI
     }
 
-    final static HashMap<Mode, Class> modeClassMap = new HashMap<Mode, Class>() {
-        {
-            put(Mode.GUI, SemuxGUI.class);
-            put(Mode.CLI, SemuxCLI.class);
+    private static Class getModeClass(Mode mode) {
+        switch (mode) {
+            case CLI:
+                return SemuxCLI.class;
+
+            case GUI:
+                return SemuxGUI.class;
+
+            default:
+                throw new WrapperException("Selected mode is not supported");
         }
-    };
+    }
 
     public static void main(String[] args) throws IOException, InterruptedException, ParseException {
         Wrapper wrapper = new Wrapper();
@@ -48,21 +53,8 @@ public class Wrapper {
     }
 
     public int parseAndExecute(String[] args) throws IOException, InterruptedException, ParseException {
-        Options options = new Options();
-
-        Option jvmOptions = Option.builder().longOpt("jvm-options").hasArg(true).type(String.class).build();
-        options.addOption(jvmOptions);
-
-        OptionGroup modeOption = new OptionGroup();
-        modeOption.setRequired(true);
-        Option guiMode = Option.builder().longOpt("gui").hasArg(false).build();
-        modeOption.addOption(guiMode);
-        Option cliMode = Option.builder().longOpt("cli").hasArg(false).build();
-        modeOption.addOption(cliMode);
-        options.addOptionGroup(modeOption);
-
         CommandLineParser parser = new DefaultParser();
-        CommandLine commandLine = parser.parse(options, args, true);
+        CommandLine commandLine = parser.parse(buildOptions(), args, true);
 
         String jvmOptionsString = "";
         if (commandLine.hasOption("jvm-options")) {
@@ -93,12 +85,29 @@ public class Wrapper {
         return exec(mode, jvmOptionsString, commandLine.getArgs());
     }
 
+    private Options buildOptions() {
+        Options options = new Options();
+
+        Option jvmOptions = Option.builder().longOpt("jvm-options").hasArg(true).type(String.class).build();
+        options.addOption(jvmOptions);
+
+        OptionGroup modeOption = new OptionGroup();
+        modeOption.setRequired(true);
+        Option guiMode = Option.builder().longOpt("gui").hasArg(false).build();
+        modeOption.addOption(guiMode);
+        Option cliMode = Option.builder().longOpt("cli").hasArg(false).build();
+        modeOption.addOption(cliMode);
+        options.addOptionGroup(modeOption);
+
+        return options;
+    }
+
     protected int exec(Mode mode, String jvmOptions, String[] args) throws IOException, InterruptedException {
         String javaHome = System.getProperty("java.home");
         Path javaBin = Paths.get(javaHome, "bin", "java");
         String[] args1 = ArrayUtils.addAll(
                 ArrayUtils.addAll(new String[] { javaBin.toAbsolutePath().toString() }, jvmOptions.split(" ")),
-                ArrayUtils.addAll(new String[] { "-cp", "semux.jar", modeClassMap.get(mode).getCanonicalName() },
+                ArrayUtils.addAll(new String[] { "-cp", "semux.jar", getModeClass(mode).getCanonicalName() },
                         args));
 
         ProcessBuilder builder = new ProcessBuilder();
@@ -115,5 +124,11 @@ public class Wrapper {
     protected int getAvailableMemoryInMB() {
         OperatingSystemMXBean os = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         return (int) (os.getTotalPhysicalMemorySize() / 1024 / 1024 * 0.8);
+    }
+
+    public static class WrapperException extends RuntimeException {
+        WrapperException(String s) {
+            super(s);
+        }
     }
 }
