@@ -44,6 +44,9 @@ public class SystemUtil {
         }
     }
 
+    private SystemUtil() {
+    }
+
     /**
      * Get the operating system name.
      * 
