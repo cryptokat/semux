@@ -56,7 +56,7 @@ public class HomePanel extends JPanel implements ActionListener {
     private JPanel transactions;
     private JLabel peers;
 
-    public HomePanel(JFrame frame, WalletModel model) {
+    public HomePanel(WalletModel model) {
         this.model = model;
         this.model.addListener(this);
 
