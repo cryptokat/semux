@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 import org.json.JSONObject;
 import org.junit.AfterClass;
@@ -44,7 +45,7 @@ public class ApiUtilTest {
     public void testRequest() throws IOException {
         String cmd = "get_block";
 
-        ApiUtil api = new ApiUtil(Config.API_USERNAME, Config.API_PASSWORD);
+        ApiUtil api = new ApiUtil(new InetSocketAddress("127.0.0.1", 5171), Config.API_USERNAME, Config.API_PASSWORD);
         JSONObject obj = api.request(cmd, "number", 0);
 
         assertTrue(obj.getBoolean("success"));
@@ -52,8 +53,10 @@ public class ApiUtilTest {
     }
 
     @AfterClass
-    public static void teardown() {
+    public static void teardown() throws IOException {
         api.stop();
-        wallet.delete();
+        if (wallet.exists()) {
+            wallet.delete();
+        }
     }
 }

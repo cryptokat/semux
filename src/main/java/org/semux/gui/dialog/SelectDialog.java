@@ -131,14 +131,4 @@ public class SelectDialog extends JDialog implements ActionListener {
         this.setVisible(true);
         return selected;
     }
-
-    public static void main(String[] args) throws InterruptedException {
-        String msg = "Please select an account to continue";
-        List<String> options = Arrays.asList("0x1122334455667788112233445566778811223344, #0",
-                "0x1122334455667788112233445566778811223344, #1");
-
-        SelectDialog select = new SelectDialog(null, msg, options);
-        int idx = select.getSelectedIndex();
-        System.out.println("Selected: " + idx);
-    }
 }

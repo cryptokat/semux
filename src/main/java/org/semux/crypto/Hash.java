@@ -22,6 +22,9 @@ public class Hash {
         Security.addProvider(new BouncyCastleProvider());
     }
 
+    private Hash() {
+    }
+
     /**
      * Generate the 256-bit hash.
      * 
@@ -33,7 +36,7 @@ public class Hash {
             MessageDigest digest = MessageDigest.getInstance(Config.CRYPTO_H256_ALG);
             return digest.digest(input);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new CryptoException(e);
         }
     }
 
