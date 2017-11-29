@@ -34,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.spy;
 
-
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(LoggerConfigurator.class)
 public class LoggerConfiguratorTest {
