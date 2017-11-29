@@ -82,7 +82,7 @@ public class Wallet {
             this.password = password;
             return true;
         } catch (CryptoException | InvalidKeySpecException e) {
-            logger.error("Failed to decrypt the wallet data");
+            logger.error("Failed to decrypt the wallet data", e);
         } catch (IOException e) {
             logger.error("Failed to open wallet", e);
         }

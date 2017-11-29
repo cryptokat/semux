@@ -54,6 +54,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <minimizeJar>true</minimizeJar>
                     <shadedArtifactAttached>true</shadedArtifactAttached>
                     <shadedClassifierName>shaded</shadedClassifierName>
                     <artifactSet>
@@ -71,11 +72,27 @@
                         </transformer>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                             <resource>LICENSE</resource>
+                            <resource>logback.xml</resource>
                         </transformer>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <mainClass>org.semux.gui.SemuxGUI</mainClass>
                         </transformer>
                     </transformers>
+                    <filters>
+                        <!-- dependencies which need to be included explicitly since they load classes dynamically -->
+                        <filter>
+                            <artifact>org.bouncycastle:*</artifact>
+                            <includes>
+                                <include>**</include>
+                            </includes>
+                        </filter>
+                        <filter>
+                            <artifact>ch.qos.logback:*</artifact>
+                            <includes>
+                                <include>**</include>
+                            </includes>
+                        </filter>
+                    </filters>
                 </configuration>
             </plugin>
 
