@@ -135,6 +135,7 @@ public class SemuxSync implements Sync {
                     try {
                         isRunning.wait();
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         logger.info("Sync manager got interrupted");
                         break;
                     }
@@ -152,6 +153,7 @@ public class SemuxSync implements Sync {
                 logger.info("Syncing finished");
 
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 logger.error("Executors were not properly shut down");
             }
         }
@@ -303,7 +305,7 @@ public class SemuxSync implements Sync {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    // do nothing
+                    Thread.currentThread().interrupt();
                 }
             }
         }

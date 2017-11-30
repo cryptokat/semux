@@ -161,7 +161,10 @@ public class Block {
                     return false;
                 }
             }
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (ExecutionException e) {
             return false;
         }
 
