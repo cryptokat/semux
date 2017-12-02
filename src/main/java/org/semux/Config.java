@@ -69,14 +69,6 @@ public class Config {
                     P2P_DECLARED_IP = props.getProperty(name);
                     break;
 
-                case "net.blacklist":
-                    String[] blacklist = props.getProperty(name).split(",");
-                    for (String ip : blacklist) {
-                        if (!(ip = ip.trim()).isEmpty()) {
-                            NET_BLACKLIST.add(ip);
-                        }
-                    }
-                    break;
                 case "net.maxConnections":
                     NET_MAX_CONNECTIONS = Integer.parseInt(props.getProperty(name));
                     break;
@@ -227,11 +219,6 @@ public class Config {
     // =========================
     // Network
     // =========================
-
-    /**
-     * IP black list.
-     */
-    public static Set<String> NET_BLACKLIST = new HashSet<>();
 
     /**
      * Maximum number of connections.

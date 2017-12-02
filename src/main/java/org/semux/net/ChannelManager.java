@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.semux.Config;
+import org.semux.net.filter.SemuxIpFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +29,28 @@ public class ChannelManager {
     private Map<InetSocketAddress, Channel> channels = new HashMap<>();
     private Map<String, Channel> activeChannels = new HashMap<>();
 
+    private final SemuxIpFilter ipFilter;
+
+    public ChannelManager() {
+        ipFilter = (new SemuxIpFilter.Loader()).load().orElse(null);
+    }
+
+    public SemuxIpFilter getIpFilter() {
+        return ipFilter;
+    }
+
     /**
      * Returns whether an address is in the blacklist.
      * 
      * @param address
      * @return
      */
-    public synchronized boolean isBlocked(InetSocketAddress address) {
-        return Config.NET_BLACKLIST.contains(address.getAddress().getHostAddress());
+    public boolean isBlocked(InetSocketAddress address) {
+        if (ipFilter == null) {
+            return false;
+        } else {
+            return ipFilter.isBlocked(address);
+        }
     }
 
     /**
