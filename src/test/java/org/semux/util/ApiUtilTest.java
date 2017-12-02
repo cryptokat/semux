@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -21,6 +20,8 @@ import org.semux.Config;
 import org.semux.api.APIServerMock;
 import org.semux.core.Wallet;
 import org.semux.crypto.EdDSA;
+
+import javax.json.JsonObject;
 
 public class ApiUtilTest {
     private static File file = new File("wallet_test.data");
@@ -46,10 +47,10 @@ public class ApiUtilTest {
         String cmd = "get_block";
 
         ApiUtil api = new ApiUtil(new InetSocketAddress("127.0.0.1", 5171), Config.API_USERNAME, Config.API_PASSWORD);
-        JSONObject obj = api.request(cmd, "number", 0);
+        JsonObject obj = api.request(cmd, "number", 0);
 
         assertTrue(obj.getBoolean("success"));
-        assertNotNull(obj.getJSONObject("result"));
+        assertNotNull(obj.getJsonObject("result"));
     }
 
     @AfterClass
