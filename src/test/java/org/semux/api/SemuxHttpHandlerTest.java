@@ -49,6 +49,7 @@ public class SemuxHttpHandlerTest {
             try {
                 Thread.sleep(200);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 break;
             }
         }
@@ -85,6 +86,7 @@ public class SemuxHttpHandlerTest {
             try {
                 Thread.sleep(200);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 break;
             }
         }
@@ -127,6 +129,7 @@ public class SemuxHttpHandlerTest {
             try {
                 Thread.sleep(200);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 break;
             }
         }

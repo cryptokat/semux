@@ -186,6 +186,7 @@ public class SemuxBFT implements Consensus {
                     break;
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
                 logger.warn("Unexpected exception in event loop", e);
@@ -853,6 +854,7 @@ public class SemuxBFT implements Consensus {
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     return;
                 }
             }
@@ -871,6 +873,7 @@ public class SemuxBFT implements Consensus {
                     t.interrupt();
                     t.join(10000);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     logger.warn("Failed to stop consensus timer");
                 }
                 t = null;
@@ -912,6 +915,7 @@ public class SemuxBFT implements Consensus {
                         }
                     }
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     break;
                 }
             }
@@ -930,6 +934,7 @@ public class SemuxBFT implements Consensus {
                     t.interrupt();
                     t.join();
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     logger.error("Failed to stop consensus broadcaster");
                 }
                 t = null;

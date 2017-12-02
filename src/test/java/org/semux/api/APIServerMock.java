@@ -52,6 +52,7 @@ public class APIServerMock {
                     try {
                         Thread.sleep(200);
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         break;
                     }
                 } else {
@@ -73,6 +74,7 @@ public class APIServerMock {
                     try {
                         Thread.sleep(200);
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         break;
                     }
                 } else {
