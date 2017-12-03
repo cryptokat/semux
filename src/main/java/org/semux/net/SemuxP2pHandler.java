@@ -67,7 +67,7 @@ public class SemuxP2pHandler extends SimpleChannelInboundHandler<Message> {
 
     private boolean isHandshakeDone;
     private Sync sync;
-    private Consensus consenus;
+    private Consensus consensus;
 
     private static ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
         private AtomicInteger cnt = new AtomicInteger(0);
@@ -99,7 +99,7 @@ public class SemuxP2pHandler extends SimpleChannelInboundHandler<Message> {
 
         this.isHandshakeDone = false;
         this.sync = SemuxSync.getInstance();
-        this.consenus = SemuxBFT.getInstance();
+        this.consensus = SemuxBFT.getInstance();
     }
 
     @Override
@@ -266,7 +266,7 @@ public class SemuxP2pHandler extends SimpleChannelInboundHandler<Message> {
         case BFT_PROPOSAL:
         case BFT_VOTE: {
             if (isHandshakeDone) {
-                consenus.onMessage(channel, msg);
+                consensus.onMessage(channel, msg);
             }
             break;
         }
@@ -306,7 +306,7 @@ public class SemuxP2pHandler extends SimpleChannelInboundHandler<Message> {
     private void onHandshakeDone(Peer peer) {
         if (!isHandshakeDone) {
             // notify consensus about peer height
-            consenus.onMessage(channel, new BFTNewHeightMessage(peer.getLatestBlockNumber() + 1));
+            consensus.onMessage(channel, new BFTNewHeightMessage(peer.getLatestBlockNumber() + 1));
 
             // start peers exchange
             getNodes = exec.scheduleAtFixedRate(() -> msgQueue.sendMessage(new GetNodesMessage()),

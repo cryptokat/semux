@@ -70,7 +70,7 @@ public class SemuxChannelInitializer extends ChannelInitializer<NioSocketChannel
 
             if (isInbound() && channelMgr.isBlocked(address)) {
                 // avoid too frequent connection attempts
-                logger.debug("Drop connection from a blocked peer, channel: {}", ch);
+                logger.debug("Drop inbound connection {}:{}", address.getAddress().getHostAddress(), address.getPort());
                 ch.disconnect();
                 return;
             }
