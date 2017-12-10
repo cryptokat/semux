@@ -10,6 +10,8 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * ApiHandlerResponse is the base class of Semux API responses
@@ -28,5 +30,9 @@ public class ApiHandlerResponse {
             @JsonProperty("message") String message) {
         this.success = success;
         this.message = message;
+    }
+
+    public String serialize() throws JsonProcessingException {
+        return new ObjectMapper().writeValueAsString(this);
     }
 }

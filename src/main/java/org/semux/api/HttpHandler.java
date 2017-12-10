@@ -8,6 +8,7 @@ package org.semux.api;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.CONTINUE;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -15,13 +16,17 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.semux.api.exception.ApiHandlerException;
+import org.semux.api.response.ApiHandlerResponse;
 import org.semux.config.Config;
 import org.semux.util.BasicAuth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -53,6 +58,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
 
     private static final int MAX_BODY_SIZE = 512 * 1024; // 512KB
     private static final Charset CHARSET = CharsetUtil.UTF_8;
+    private static final Pattern ARRAY_PARAM_PATTERN = Pattern.compile("\\[\\]$");
 
     private Config config;
     private ApiHandler apiHandler;
@@ -63,7 +69,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
     private HttpHeaders headers;
     private ByteBuf body;
 
-    private String response = null;
+    private ApiHandlerResponse response = null;
     private HttpResponseStatus status;
 
     public HttpHandler(Config config, ApiHandler apiHandler) {
@@ -143,12 +149,13 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
                 }
 
                 // filter parameters
-                Map<String, String> map = new HashMap<>();
+                Map<String, Object> map = new HashMap<>();
                 for (Map.Entry<String, List<String>> entry : params.entrySet()) {
                     List<String> v = entry.getValue();
                     // duplicate names are not allowed.
                     if (!v.isEmpty()) {
-                        map.put(entry.getKey(), v.get(0));
+                        boolean isArray = ARRAY_PARAM_PATTERN.matcher(entry.getKey()).find();
+                        map.put(entry.getKey(), isArray ? v : v.get(0));
                     }
                 }
 
@@ -158,12 +165,22 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
                         response = apiHandler.service(uri, map, headers);
                         status = OK;
                     } catch (ApiHandlerException ex) {
-                        response = ex.response;
+                        response = new ApiHandlerResponse(false, ex.response);
                         status = HttpResponseStatus.valueOf(ex.statusCode);
                     }
                 }
 
-                if (!writeResponse(ctx, status, response)) {
+                // serialize response
+                String responseBody;
+                try {
+                    responseBody = response.serialize();
+                } catch (JsonProcessingException ex) {
+                    logger.error("failed to serialize response", ex);
+                    status = INTERNAL_SERVER_ERROR;
+                    responseBody = "{\"success\":false,\"message\":\"Internal Server Error\"}";
+                }
+
+                if (!writeResponse(ctx, status, responseBody)) {
                     // if keep-alive is off, close the connection after flushing
                     ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
                 }
@@ -179,7 +196,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
             return;
         }
 
-        response = BAD_REQUEST.toString();
+        response = new ApiHandlerResponse(false, BAD_REQUEST.toString());
         status = BAD_REQUEST;
     }
 
@@ -194,10 +211,10 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
         return auth != null && username.equals(auth.getKey()) && password.equals(auth.getValue());
     }
 
-    private boolean writeResponse(ChannelHandlerContext ctx, HttpResponseStatus status, String response) {
+    private boolean writeResponse(ChannelHandlerContext ctx, HttpResponseStatus status, String responseBody) {
         // construct a HTTP response
         FullHttpResponse resp = new DefaultFullHttpResponse(HTTP_1_1, status,
-                Unpooled.copiedBuffer(response == null ? "" : response, CHARSET));
+                Unpooled.copiedBuffer(responseBody == null ? "" : responseBody, CHARSET));
 
         // set response headers
         resp.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
