@@ -29,7 +29,7 @@ public class HttpHandlerTest {
     private static int port = 5171;
 
     private String uri = null;
-    private Map<String, String> params = null;
+    private Map<String, Object> params = null;
     private HttpHeaders headers = null;
 
     private KernelMock kernel;
