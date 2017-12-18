@@ -45,7 +45,8 @@ public class BlockchainPerformance {
     private static final long timestamp = System.currentTimeMillis() - 60 * 1000;
 
     /**
-     * The benchmark tries to create a block filled with single-recipient TRANSFER transactions
+     * The benchmark tries to create a block filled with single-recipient TRANSFER
+     * transactions
      */
     private static void testLargeBlockSingleRecipient(DBFactory dbFactory) {
         logger.info("Binary-searching the maximum number of single-recipient transactions per block...");
@@ -57,7 +58,7 @@ public class BlockchainPerformance {
 
         int low = 1, high = config.maxBlockSize() / EdDSA.ADDRESS_LEN, numberOfTxs = (low + high) / 2;
         Block block = makeSingleRecipientBlock(numberOfTxs);
-        while(high - low > 1) {
+        while (high - low > 1) {
             System.out.format("low = %d, mid = %d, high = %d\n", low, numberOfTxs, high);
 
             if (block.size() > config.maxBlockSize()) {
@@ -72,14 +73,15 @@ public class BlockchainPerformance {
         blockchain.addBlock(block);
         Duration duration = Duration.between(begin, Instant.now());
 
-        logger.info("Single-Recipient Block Size = {} bytes, {} txs, took {}\n", block.size(), numberOfTxs, TimeUtil.formatDuration(duration));
+        logger.info("Single-Recipient Block Size = {} bytes, {} txs, took {}\n", block.size(), numberOfTxs,
+                TimeUtil.formatDuration(duration));
     }
 
     private static Block makeSingleRecipientBlock(int numberOfTxs) {
         List<Transaction> txs = new ArrayList<>();
         List<TransactionResult> results = new ArrayList<>();
 
-        for (int i = 0;i < numberOfTxs;i++) {
+        for (int i = 0; i < numberOfTxs; i++) {
             txs.add(new Transaction(TransactionType.TRANSFER, Bytes.random(EdDSA.ADDRESS_LEN), value, fee,
                     nonce + numberOfTxs, timestamp, data).sign(key));
             results.add(new TransactionResult(true));
@@ -93,7 +95,8 @@ public class BlockchainPerformance {
     }
 
     /**
-     * The benchmark tries to create a block filled with multi-recipient TRANSFER transactions
+     * The benchmark tries to create a block filled with multi-recipient TRANSFER
+     * transactions
      */
     private static void testLargeBlockMultiRecipients(DBFactory dbFactory) {
         logger.info("Binary-searching the maximum number of recipients per block...");
@@ -105,7 +108,7 @@ public class BlockchainPerformance {
 
         int low = 1, high = config.maxBlockSize() / EdDSA.ADDRESS_LEN, numberOfRecipients = (low + high) / 2;
         Block block = makeMultiRecipientBlock(numberOfRecipients);
-        while(high - low > 1) {
+        while (high - low > 1) {
             System.out.format("low = %d, mid = %d, high = %d\n", low, numberOfRecipients, high);
 
             if (block.size() > config.maxBlockSize()) {
@@ -120,11 +123,13 @@ public class BlockchainPerformance {
         blockchain.addBlock(block);
         Duration duration = Duration.between(begin, Instant.now());
 
-        logger.info("Multi-Recipient Block Size = {} bytes, {} recipients, took {}\n", block.size(), numberOfRecipients, TimeUtil.formatDuration(duration));
+        logger.info("Multi-Recipient Block Size = {} bytes, {} recipients, took {}\n", block.size(), numberOfRecipients,
+                TimeUtil.formatDuration(duration));
     }
 
     private static Block makeMultiRecipientBlock(int numberOfRecipients) {
-        Transaction tx = new Transaction(TransactionType.TRANSFER, Bytes.random(numberOfRecipients * EdDSA.ADDRESS_LEN), value, fee,
+        Transaction tx = new Transaction(TransactionType.TRANSFER, Bytes.random(numberOfRecipients * EdDSA.ADDRESS_LEN),
+                value, fee,
                 nonce + numberOfRecipients, timestamp, data).sign(key);
         List<TransactionResult> results = Arrays.asList(new TransactionResult(true));
         List<Transaction> txs = Arrays.asList(tx);
