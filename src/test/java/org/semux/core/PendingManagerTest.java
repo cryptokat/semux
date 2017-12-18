@@ -6,6 +6,7 @@
  */
 package org.semux.core;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -85,6 +86,40 @@ public class PendingManagerTest {
 
         Thread.sleep(100);
         assertEquals(1, pendingMgr.getTransactions().size());
+    }
+
+    /**
+     * Pending transactions should be sorted by:
+     * <ul>
+     * <li>fee in in descending order</li>
+     * <li>timestamp in in ascending order</li>
+     * </ul>
+     */
+    @Test
+    public void testSortedTransactions() {
+        long now = System.currentTimeMillis();
+        long nonce = accountState.getAccount(from).getNonce();
+
+        List<Transaction> txs = Arrays.asList(
+                new Transaction(type, to, value, fee + 3, nonce, now, Bytes.of("3")).sign(key),
+                new Transaction(type, to, value, fee + 4, nonce + 1, now + 1, Bytes.of("4_1")).sign(key),
+                new Transaction(type, to, value, fee + 4, nonce + 2, now, Bytes.of("4")).sign(key),
+                new Transaction(type, to, value, fee + 5, nonce + 3, now, Bytes.of("5")).sign(key),
+                new Transaction(type, to, value, fee + 2, nonce + 4, now, Bytes.of("2")).sign(key),
+                new Transaction(type, to, value, fee + 1, nonce + 5, now, Bytes.of("1")).sign(key));
+        for (Transaction tx : txs) {
+            pendingMgr.addTransaction(tx);
+        }
+
+        await().until(() -> pendingMgr.getTransactions().size() == 6);
+
+        List<Transaction> sortedTxs = pendingMgr.getTransactions();
+        assertEquals("5", new String(sortedTxs.get(0).getData()));
+        assertEquals("4", new String(sortedTxs.get(1).getData()));
+        assertEquals("4_1", new String(sortedTxs.get(2).getData()));
+        assertEquals("3", new String(sortedTxs.get(3).getData()));
+        assertEquals("2", new String(sortedTxs.get(4).getData()));
+        assertEquals("1", new String(sortedTxs.get(5).getData()));
     }
 
     @Test

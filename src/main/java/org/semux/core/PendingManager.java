@@ -7,17 +7,20 @@
 package org.semux.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -37,8 +40,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Pending manager maintains all unconfirmed transactions, either from kernel or
  * network. All transactions are evaluated and propagated to peers if success.
- * 
- * TODO: sort transaction queue by fee, and other metrics
  *
  */
 public class PendingManager implements Runnable, BlockchainListener {
@@ -76,8 +77,7 @@ public class PendingManager implements Runnable, BlockchainListener {
      * Transaction pool.
      */
     private Map<ByteArray, Transaction> pool = new HashMap<>();
-    private List<Transaction> transactions = new ArrayList<>();
-    private List<TransactionResult> results = new ArrayList<>();
+    private ConcurrentSkipListSet<PendingTransaction> transactions = new ConcurrentSkipListSet<>();
 
     // NOTE: make sure access to the LRUMap<> are synchronized.
     private Map<ByteArray, Transaction> delayed = new LRUMap<>(DELAYED_MAX_SIZE);
@@ -197,22 +197,20 @@ public class PendingManager implements Runnable, BlockchainListener {
 
         if (limit == -1) {
             // returns all transactions if there is no limit
-            txs.addAll(transactions);
-            res.addAll(results);
+            txs.addAll(transactions.stream().map(pt -> pt.transaction).collect(Collectors.toList()));
+            res.addAll(transactions.stream().map(pt -> pt.transactionResult).collect(Collectors.toList()));
         } else {
-            Iterator<Transaction> itTransaction = transactions.iterator();
-            Iterator<TransactionResult> itResult = results.iterator();
+            Iterator<PendingTransaction> itTransaction = transactions.iterator();
 
             int size = 0;
-            while (itTransaction.hasNext() && itResult.hasNext()) {
-                Transaction tx = itTransaction.next();
-                TransactionResult txResult = itResult.next();
+            while (itTransaction.hasNext()) {
+                PendingTransaction pendingTransaction = itTransaction.next();
 
-                if (size + tx.size() > limit) {
+                if (size + pendingTransaction.transaction.size() > limit) {
                     break;
                 } else {
-                    txs.add(tx);
-                    res.add(txResult);
+                    txs.add(pendingTransaction.transaction);
+                    res.add(pendingTransaction.transactionResult);
                 }
             }
         }
@@ -250,10 +248,9 @@ public class PendingManager implements Runnable, BlockchainListener {
         pendingDS = chain.getDelegateState().track();
 
         // clear transaction pool
-        List<Transaction> txs = new ArrayList<>(transactions);
+        List<Transaction> txs = transactions.stream().map(pt -> pt.transaction).collect(Collectors.toList());
         pool.clear();
         transactions.clear();
-        results.clear();
 
         return txs;
     }
@@ -334,8 +331,7 @@ public class PendingManager implements Runnable, BlockchainListener {
 
                 // add transaction to pool
                 pool.put(createKey(tx), tx);
-                transactions.add(tx);
-                results.add(result);
+                transactions.add(new PendingTransaction(tx, result));
                 cnt++;
 
                 // relay transaction
@@ -372,5 +368,32 @@ public class PendingManager implements Runnable, BlockchainListener {
 
     private ByteArray createKey(byte[] acc, long nonce) {
         return ByteArray.of(Bytes.merge(acc, Bytes.of(nonce)));
+    }
+
+    private class PendingTransaction implements Comparable<PendingTransaction> {
+
+        public final Transaction transaction;
+
+        public final TransactionResult transactionResult;
+
+        public PendingTransaction(Transaction transaction, TransactionResult transactionResult) {
+            this.transaction = transaction;
+            this.transactionResult = transactionResult;
+        }
+
+        @Override
+        public int compareTo(PendingTransaction tx) {
+            if (Arrays.equals(transaction.getHash(), tx.transaction.getHash())) {
+                // 2 transactions are considered the same as each other if and only if they have
+                // the same tx hash
+                return 0;
+            } else if (transaction.getFee() == tx.transaction.getFee()) {
+                // sorted by timestamp in ascending order
+                return transaction.getTimestamp() < tx.transaction.getTimestamp() ? -1 : 1;
+            } else {
+                // sorted by fee in descending order
+                return transaction.getFee() > tx.transaction.getFee() ? -1 : 1;
+            }
+        }
     }
 }
