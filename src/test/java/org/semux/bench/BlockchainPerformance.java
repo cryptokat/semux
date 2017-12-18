@@ -42,8 +42,8 @@ public class BlockchainPerformance {
     private static final long timestamp = System.currentTimeMillis() - 60 * 1000;
 
     /**
-     * The benchmark tries to create a block filled with TRANSFER_MANY transactions
-     * each with Transaction.MAX_RECIPIENTS recipients
+     * The benchmark tries to create a block filled with TRANSFER transactions each
+     * with Transaction.MAX_RECIPIENTS recipients
      */
     private static void testLargeBlock(DBFactory dbFactory) {
         Instant begin = Instant.now();
@@ -56,7 +56,7 @@ public class BlockchainPerformance {
         // there can be 50 transactions in this case
         for (int i = 1; i <= config.maxBlockSize() / (Transaction.MAX_RECIPIENTS / 2); i++) {
             Transaction tx = new Transaction(
-                    TransactionType.TRANSFER_MANY,
+                    TransactionType.TRANSFER,
                     Bytes.random(EdDSA.ADDRESS_LEN * Transaction.MAX_RECIPIENTS),
                     value,
                     fee,

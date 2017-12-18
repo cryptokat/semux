@@ -291,8 +291,7 @@ public class SendPanel extends JPanel implements ActionListener {
                     PendingManager pendingMgr = kernel.getPendingManager();
 
                     int numberOfRecipients = to.length / EdDSA.ADDRESS_LEN;
-                    TransactionType type = numberOfRecipients == 1 ? TransactionType.TRANSFER
-                            : TransactionType.TRANSFER_MANY;
+                    TransactionType type = TransactionType.TRANSFER;
                     byte[] from = acc.getKey().toAddress();
                     long nonce = pendingMgr.getNonce(from);
                     long timestamp = System.currentTimeMillis();

@@ -85,16 +85,6 @@ public class TransactionExecutor {
 
             switch (tx.getType()) {
             case TRANSFER: {
-                if (fee <= available && value <= available && value + fee <= available) {
-
-                    as.adjustAvailable(from, -value - fee);
-                    as.adjustAvailable(tx.getRecipient(0), value);
-
-                    result.setSuccess(true);
-                }
-                break;
-            }
-            case TRANSFER_MANY: {
                 byte[][] recipients = tx.getRecipients();
                 long deduction = value * recipients.length + fee;
 

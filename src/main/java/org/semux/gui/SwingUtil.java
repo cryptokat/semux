@@ -454,7 +454,6 @@ public class SwingUtil {
         case VOTE:
         case UNVOTE:
         case TRANSFER:
-        case TRANSFER_MANY:
             return getTransactionRecipientsDescription(gui, tx);
         case DELEGATE:
             return GUIMessages.get("DelegateRegistration");

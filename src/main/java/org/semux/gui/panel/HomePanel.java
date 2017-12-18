@@ -49,8 +49,7 @@ public class HomePanel extends JPanel implements ActionListener {
 
     private static final EnumSet<TransactionType> FEDERATED_TRANSACTION_TYPES = EnumSet.of(
             TransactionType.COINBASE,
-            TransactionType.TRANSFER,
-            TransactionType.TRANSFER_MANY);
+            TransactionType.TRANSFER);
 
     private transient SemuxGUI gui;
     private transient WalletModel model;
@@ -177,9 +176,7 @@ public class HomePanel extends JPanel implements ActionListener {
             lblType.setIcon(SwingUtil.loadImage(name, 42, 42));
             String mathSign = inBound ? "+" : "-";
             String prefix = (inBound && outBound) ? "" : (mathSign);
-            JLabel lblAmount = new JLabel(prefix + SwingUtil.formatValue(
-                    tx.getType() == TransactionType.TRANSFER_MANY ? tx.getValue() * tx.numberOfRecipients()
-                            : tx.getValue()));
+            JLabel lblAmount = new JLabel(prefix + SwingUtil.formatValue(tx.getValue() * tx.numberOfRecipients()));
             lblAmount.setHorizontalAlignment(SwingConstants.RIGHT);
 
             JLabel lblTime = new JLabel(SwingUtil.formatTimestamp(tx.getTimestamp()));

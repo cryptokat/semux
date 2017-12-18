@@ -16,16 +16,12 @@ import org.semux.crypto.Hash;
 import org.semux.crypto.Hex;
 import org.semux.util.SimpleDecoder;
 import org.semux.util.SimpleEncoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xbill.DNS.Address;
 
 public class Transaction implements Callable<Boolean> {
 
-    private static final Logger logger = LoggerFactory.getLogger(Transaction.class);
-
     /**
-     * The maximum number of recipients of a TRANSFER_MANY transaction
+     * The maximum number of recipients per transaction
      */
     public static final int MAX_RECIPIENTS = 200;
 
@@ -38,6 +34,12 @@ public class Transaction implements Callable<Boolean> {
 
     private final TransactionType type;
 
+    /**
+     * Raw bytes of recipients. <code>to</code> array is composed with one or
+     * multiple encoded ${@link EdDSA} public key which can be retrieved by calling
+     * ${@link EdDSA#toAddress()}. Each encoded public key should be in length of 20
+     * bytes. The total length of <code>to</code> array should be multiple of 20.
+     */
     private final byte[] to;
 
     private final long value;
@@ -134,17 +136,12 @@ public class Transaction implements Callable<Boolean> {
     public boolean validate() {
         long numberOfRecipients = numberOfRecipients();
 
-        if (numberOfRecipients > 1 && type != TransactionType.TRANSFER_MANY) {
-            logger.warn(
-                    "The feature of multiple recipients is only supported by TRANSFER_MANY transaction (recipients: {}, hash: {})",
-                    numberOfRecipients, Hex.encode(getHash()));
+        // The feature of multiple recipients is only supported by TRANSFER transaction
+        if (numberOfRecipients > 1 && type != TransactionType.TRANSFER) {
             return false;
         }
 
-        if (numberOfRecipients() > MAX_RECIPIENTS) {
-            logger.warn(
-                    "ignoring large transaction (recipients: {}, hash: {})",
-                    numberOfRecipients, Hex.encode(getHash()));
+        if (numberOfRecipients > MAX_RECIPIENTS) {
             return false;
         }
 

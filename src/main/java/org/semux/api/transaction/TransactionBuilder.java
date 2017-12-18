@@ -79,35 +79,24 @@ public class TransactionBuilder {
         return this;
     }
 
-    public TransactionBuilder withTo(String pTo) {
+    public TransactionBuilder withTo(List<String> pTo) {
         if (type == TransactionType.DELEGATE) {
-            if (pTo != null) {
+            if (pTo != null && !pTo.isEmpty()) {
                 throw new IllegalArgumentException(
                         "DELEGATE transaction should never have a customized 'to' parameter");
             }
             return this; // ignore the provided parameter
         }
 
-        if (pTo == null) {
+        if (pTo == null || pTo.isEmpty()) {
             throw new IllegalArgumentException("parameter 'to' is required");
         }
 
         try {
-            to = Hex.parse(pTo);
+            this.to = pTo.stream().map(String::trim).map(Hex::parse).reduce(new byte[0], ArrayUtils::addAll);
         } catch (CryptoException e) {
-            throw new IllegalArgumentException("'to' is not a valid hexadecimal string");
+            throw new IllegalArgumentException("'to' contains invalid hexadecimal string");
         }
-
-        return this;
-    }
-
-    public TransactionBuilder withToMany(List<String> toMany) {
-        if (type != TransactionType.TRANSFER_MANY) {
-            throw new IllegalArgumentException("non-TRANSFER_MANY transaction should never have a 'to[]' parameter");
-        }
-
-        // concatenate all recipients into a single byte array
-        to = toMany.stream().map(Hex::parse).reduce(new byte[0], ArrayUtils::addAll);
 
         return this;
     }

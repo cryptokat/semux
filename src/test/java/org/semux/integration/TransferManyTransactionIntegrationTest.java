@@ -11,7 +11,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
@@ -139,7 +139,7 @@ public class TransferManyTransactionIntegrationTest {
         await().until(() -> kernelReceiver1.isBooted());
         await().until(() -> kernelReceiver2.isBooted());
 
-        // make transfer_many request from kernelPremine to kernelReceiver1 and
+        // make transfer request from kernelPremine to kernelReceiver1 and
         // kernelReceiver2
         final long value = 1000 * Unit.SEM;
         final long fee = kernelPremine.getConfig().minTransactionFee() * 2;
@@ -148,8 +148,8 @@ public class TransferManyTransactionIntegrationTest {
         params.put("to", addressStringOf(kernelReceiver1) + "," + addressStringOf(kernelReceiver2));
         params.put("value", String.valueOf(value));
         params.put("fee", String.valueOf(fee));
-        logger.info("Making transfer_many request", params);
-        String response = kernelPremine.getApiClient().request("transfer_many", params);
+        logger.info("Making transfer request", params);
+        String response = kernelPremine.getApiClient().request("transfer", params);
         Map<String, String> result = new ObjectMapper().readValue(response, new TypeReference<Map<String, String>>() {
         });
         assertEquals("true", result.get("success"));
@@ -172,8 +172,8 @@ public class TransferManyTransactionIntegrationTest {
     private void assertTransferManyTransaction(KernelMock kernelMock) throws IOException {
         GetTransactionResponse.Result transactionResultPremine = getTransactionResultOf(kernelMock, 0);
         assertEquals(addressStringOf(kernelPremine), transactionResultPremine.from);
-        assertNull(transactionResultPremine.to);
-        assertThat(transactionResultPremine.toMany,
+        assertNotNull(transactionResultPremine.to);
+        assertThat(transactionResultPremine.to,
                 contains(addressStringOf(kernelReceiver1), addressStringOf(kernelReceiver2)));
     }
 

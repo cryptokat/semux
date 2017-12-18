@@ -72,7 +72,7 @@ public class TransactionTest {
     @Test
     public void testTransactionSizeMaximumRecipients() {
         Transaction tx = new Transaction(
-                TransactionType.TRANSFER_MANY,
+                TransactionType.TRANSFER,
                 Bytes.random(EdDSA.ADDRESS_LEN * Transaction.MAX_RECIPIENTS), // 200 recipients
                 value,
                 fee,
@@ -88,7 +88,7 @@ public class TransactionTest {
 
     @Test
     public void testGetRecipients() {
-        Transaction tx = new Transaction(TransactionType.TRANSFER_MANY, Bytes.random(EdDSA.ADDRESS_LEN * 10), value,
+        Transaction tx = new Transaction(TransactionType.TRANSFER, Bytes.random(EdDSA.ADDRESS_LEN * 10), value,
                 fee, nonce, timestamp, Bytes.EMPTY_BYTES).sign(key);
         byte[][] recipients = tx.getRecipients();
         assertEquals(10, recipients.length);
@@ -106,7 +106,7 @@ public class TransactionTest {
         }
 
         Transaction tx = new Transaction(
-                TransactionType.TRANSFER_MANY,
+                TransactionType.TRANSFER,
                 recipients.stream().map(EdDSA::toAddress).reduce(new byte[0], ArrayUtils::addAll),
                 value,
                 fee,
@@ -122,7 +122,7 @@ public class TransactionTest {
     @Test
     public void testValidateMultiRecipientException() {
         EnumSet<TransactionType> transactionTypes = EnumSet.allOf(TransactionType.class);
-        transactionTypes.remove(TransactionType.TRANSFER_MANY);
+        transactionTypes.remove(TransactionType.TRANSFER);
         for (TransactionType type : transactionTypes) {
             Transaction tx = new Transaction(
                     type,
@@ -133,7 +133,7 @@ public class TransactionTest {
                     timestamp,
                     Bytes.EMPTY_BYTES);
             assertFalse(
-                    "TRANSFER_MANY should be the only transaction type that supports multiple recipients",
+                    "TRANSFER should be the only transaction type that supports multiple recipients",
                     tx.validate());
         }
     }

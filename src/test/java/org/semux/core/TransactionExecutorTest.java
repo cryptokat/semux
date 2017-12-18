@@ -94,7 +94,7 @@ public class TransactionExecutorTest {
         EdDSA key = new EdDSA();
         final int numberOfRecipients = 2;
 
-        TransactionType type = TransactionType.TRANSFER_MANY;
+        TransactionType type = TransactionType.TRANSFER;
         byte[] from = key.toAddress();
         byte[] to = Bytes.random(EdDSA.ADDRESS_LEN * numberOfRecipients);
         long value = 5;
@@ -135,7 +135,7 @@ public class TransactionExecutorTest {
         EdDSA key = new EdDSA();
         final int numberOfRecipients = 2;
 
-        TransactionType type = TransactionType.TRANSFER_MANY;
+        TransactionType type = TransactionType.TRANSFER;
         byte[] from = key.toAddress();
         byte[] to = Bytes.random(EdDSA.ADDRESS_LEN * numberOfRecipients);
         long value = 5;

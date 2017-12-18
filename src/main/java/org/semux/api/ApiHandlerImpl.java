@@ -157,7 +157,6 @@ public class ApiHandlerImpl implements ApiHandler {
                 return createAccount();
 
             case TRANSFER:
-            case TRANSFER_MANY:
             case DELEGATE:
             case VOTE:
             case UNVOTE:
@@ -602,7 +601,6 @@ public class ApiHandlerImpl implements ApiHandler {
      * <li>GET /delegate?from&fee&data</li>
      * <li>GET /vote?from&to&value&fee&data</li>
      * <li>GET /unvote?from&to&value&fee&data</li>
-     * <li>GET/POST /transfer_many?from&to[]&value&fee&data</li>
      * </ul>
      *
      * @param cmd
@@ -622,9 +620,6 @@ public class ApiHandlerImpl implements ApiHandler {
         case TRANSFER:
             type = TransactionType.TRANSFER;
             break;
-        case TRANSFER_MANY:
-            type = TransactionType.TRANSFER_MANY;
-            break;
         case DELEGATE:
             type = TransactionType.DELEGATE;
             break;
@@ -642,15 +637,10 @@ public class ApiHandlerImpl implements ApiHandler {
         try {
             TransactionBuilder transactionBuilder = new TransactionBuilder(kernel, type)
                     .withFrom(params.get("from"))
+                    .withTo(Arrays.asList(StringUtils.split(params.getOrDefault("to", ""), ",")))
                     .withValue(params.get("value"))
                     .withFee(params.get("fee"))
                     .withData(params.get("data"));
-
-            if (type == TransactionType.TRANSFER_MANY) {
-                transactionBuilder.withToMany(Arrays.asList(StringUtils.split(params.get("to"), ",")));
-            } else {
-                transactionBuilder.withTo(params.get("to"));
-            }
 
             Transaction tx = transactionBuilder.build();
             if (kernel.getPendingManager().addTransactionSync(tx)) {

@@ -77,7 +77,7 @@ public class SendPanelTest {
         window.dialog().button(withText("Yes")).click();
         verify(pendingManager).addTransactionSync(transactionArgumentCaptor.capture());
         Transaction tx = transactionArgumentCaptor.getValue();
-        assertEquals(TransactionType.TRANSFER_MANY, tx.getType());
+        assertEquals(TransactionType.TRANSFER, tx.getType());
         assertEquals(2, tx.numberOfRecipients());
         assertArrayEquals(recipient1.toAddress(), tx.getRecipient(0));
         assertArrayEquals(recipient2.toAddress(), tx.getRecipient(1));
