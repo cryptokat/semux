@@ -55,7 +55,6 @@ public class TransactionExecutor {
             results.add(result);
 
             byte[] from = tx.getFrom();
-            byte[] to = tx.getTo();
             long value = tx.getValue();
             long nonce = tx.getNonce();
             long fee = tx.getFee();
@@ -72,28 +71,40 @@ public class TransactionExecutor {
             }
 
             // check transaction fee
-            if (fee < config.minTransactionFee()) {
+            if (fee < config.minTransactionFee() * tx.numberOfRecipients()) {
                 result.setError(Error.INVALID_FEE);
                 continue;
             }
 
-            // TODO: use enum to represent error
             switch (tx.getType()) {
             case TRANSFER: {
+                byte[][] recipients = tx.getRecipients();
+                long deduction = value * recipients.length + fee;
+
+                // check data length
                 if (data.length > config.maxTransferDataSize()) {
                     result.setError(Error.INVALID_DATA_LENGTH);
                     break;
                 }
 
-                if (fee <= available && value <= available && value + fee <= available) {
-
-                    as.adjustAvailable(from, -value - fee);
-                    as.adjustAvailable(to, value);
-
-                    result.setSuccess(true);
-                } else {
-                    result.setError(Error.INSUFFICIENT_AVAILABLE);
+                // The feature of multiple recipients is only supported by TRANSFER transaction
+                if (recipients.length > 1 && tx.getType() != TransactionType.TRANSFER) {
+                    result.setError(Error.INVALID_NUMBER_OF_RECIPIENTS);
+                    break;
                 }
+
+                // check available SEM in the current wallet
+                if (deduction > available) {
+                    result.setError(Error.INSUFFICIENT_AVAILABLE);
+                    break;
+                }
+
+                // execute the transaction
+                as.adjustAvailable(from, -deduction);
+                for (byte[] recipient : recipients) {
+                    as.adjustAvailable(recipient, value);
+                }
+                result.setSuccess(true);
                 break;
             }
             case DELEGATE: {
@@ -106,6 +117,7 @@ public class TransactionExecutor {
                     break;
                 }
 
+                byte[] to = tx.getRecipient(0);
                 if (fee <= available && value <= available && value + fee <= available) {
                     if (Arrays.equals(from, to) && ds.register(to, data)) {
 
@@ -126,6 +138,7 @@ public class TransactionExecutor {
                     break;
                 }
 
+                byte[] to = tx.getRecipient(0);
                 if (fee <= available && value <= available && value + fee <= available) {
                     if (ds.vote(from, to, value)) {
 
@@ -147,6 +160,7 @@ public class TransactionExecutor {
                     break;
                 }
 
+                byte[] to = tx.getRecipient(0);
                 if (fee <= available && value <= locked) {
                     if (ds.unvote(from, to, value)) {
 

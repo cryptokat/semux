@@ -149,7 +149,7 @@ public class TransactionsPanel extends JPanel implements ActionListener {
             case 1:
                 return SwingUtil.getTransactionDescription(gui, tx);
             case 2:
-                return SwingUtil.formatValue(tx.getValue());
+                return SwingUtil.formatValue(tx.getValue() * tx.numberOfRecipients());
             case 3:
                 return SwingUtil.formatTimestamp(tx.getTimestamp());
             default:

@@ -9,6 +9,7 @@ package org.semux.core;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
+import org.semux.core.exception.TransactionException;
 import org.semux.crypto.EdDSA;
 import org.semux.crypto.EdDSA.Signature;
 import org.semux.crypto.Hash;
@@ -19,8 +20,16 @@ import org.xbill.DNS.Address;
 
 public class Transaction implements Callable<Boolean> {
 
+    private final byte[] hash;
+
     private final TransactionType type;
 
+    /**
+     * Raw bytes of recipients. <code>to</code> array is composed with one or
+     * multiple encoded ${@link EdDSA} public key which can be retrieved by calling
+     * ${@link EdDSA#toAddress()}. Each encoded public key should be in length of 20
+     * bytes. The total length of <code>to</code> array should be multiple of 20.
+     */
     private final byte[] to;
 
     private final long value;
@@ -35,7 +44,6 @@ public class Transaction implements Callable<Boolean> {
 
     private final byte[] encoded;
 
-    private final byte[] hash; // not serialized
     private Signature signature;
 
     /**
@@ -118,7 +126,7 @@ public class Transaction implements Callable<Boolean> {
     public boolean validate() {
         return hash != null && hash.length == 32 //
                 && type != null //
-                && to != null && to.length == EdDSA.ADDRESS_LEN //
+                && to != null && to.length >= EdDSA.ADDRESS_LEN && (to.length % EdDSA.ADDRESS_LEN == 0) //
                 && value >= 0 //
                 && fee >= 0 //
                 && nonce >= 0 //
@@ -159,12 +167,42 @@ public class Transaction implements Callable<Boolean> {
     }
 
     /**
-     * Returns the recipient address.
+     * Returns an array of recipients
      *
-     * @return
+     * @return an array of recipients' address
      */
-    public byte[] getTo() {
-        return to;
+    public byte[][] getRecipients() {
+        int numberOfRecipients = numberOfRecipients();
+        byte[][] recipients = new byte[numberOfRecipients][EdDSA.ADDRESS_LEN];
+        for (int i = 0; i < numberOfRecipients; i++) {
+            recipients[i] = getRecipient(i);
+        }
+        return recipients;
+    }
+
+    /**
+     * Returns number <code>i</code> recipient of the transaction
+     *
+     * @param i
+     *            number of a recipient
+     * @return a recipient's address
+     */
+    public byte[] getRecipient(int i) {
+        return Arrays.copyOfRange(to, i * EdDSA.ADDRESS_LEN, i * EdDSA.ADDRESS_LEN + EdDSA.ADDRESS_LEN);
+    }
+
+    /**
+     * Returns the number of recipients by checking the length of {@link #to} array
+     *
+     * @return number of recipients
+     */
+    public int numberOfRecipients() {
+        int toLength = to.length;
+        if (toLength % EdDSA.ADDRESS_LEN != 0) {
+            throw new TransactionException(
+                    "then length of 'byte[] to' array is not a multiple of " + EdDSA.ADDRESS_LEN);
+        }
+        return toLength / EdDSA.ADDRESS_LEN;
     }
 
     /**

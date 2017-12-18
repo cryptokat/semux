@@ -9,6 +9,9 @@ package org.semux.bench;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.semux.config.Config;
 import org.semux.config.Constants;
@@ -42,45 +45,105 @@ public class BlockchainPerformance {
     private static final long timestamp = System.currentTimeMillis() - 60 * 1000;
 
     /**
-     * The benchmark tries to create a block filled with TRANSFER_MANY transactions
-     * each with Transaction.MAX_RECIPIENTS recipients
+     * The benchmark tries to create a block filled with single-recipient TRANSFER transactions
      */
-    private static void testLargeBlock(DBFactory dbFactory) {
+    private static void testLargeBlockSingleRecipient(DBFactory dbFactory) {
+        logger.info("Binary-searching the maximum number of single-recipient transactions per block...");
+
         Instant begin = Instant.now();
 
         Config config = new DevNetConfig(Constants.DEFAULT_DATA_DIR);
         BlockchainImpl blockchain = new BlockchainImpl(config, dbFactory);
 
-        ArrayList<Transaction> transactions = new ArrayList<>();
-        ArrayList<TransactionResult> transactionResults = new ArrayList<>();
-        // there can be 50 transactions in this case
-        for (int i = 0, size = 0;; i++) {
-            Transaction tx = new Transaction(TransactionType.TRANSFER, Bytes.random(EdDSA.ADDRESS_LEN), value, fee,
-                    nonce + i, timestamp, data).sign(key);
+        int low = 1, high = config.maxBlockSize() / EdDSA.ADDRESS_LEN, numberOfTxs = (low + high) / 2;
+        Block block = makeSingleRecipientBlock(numberOfTxs);
+        while(high - low > 1) {
+            System.out.format("low = %d, mid = %d, high = %d\n", low, numberOfTxs, high);
 
-            if (size + tx.size() > config.maxBlockSize()) {
-                break;
+            if (block.size() > config.maxBlockSize()) {
+                high = numberOfTxs;
             } else {
-                transactions.add(tx);
-                transactionResults.add(new TransactionResult(true));
+                low = numberOfTxs;
             }
+            numberOfTxs = (low + high) / 2;
+            block = makeSingleRecipientBlock(numberOfTxs);
+        }
+
+        blockchain.addBlock(block);
+        Duration duration = Duration.between(begin, Instant.now());
+
+        logger.info("Single-Recipient Block Size = {} bytes, {} txs, took {}\n", block.size(), numberOfTxs, TimeUtil.formatDuration(duration));
+    }
+
+    private static Block makeSingleRecipientBlock(int numberOfTxs) {
+        List<Transaction> txs = new ArrayList<>();
+        List<TransactionResult> results = new ArrayList<>();
+
+        for (int i = 0;i < numberOfTxs;i++) {
+            txs.add(new Transaction(TransactionType.TRANSFER, Bytes.random(EdDSA.ADDRESS_LEN), value, fee,
+                    nonce + numberOfTxs, timestamp, data).sign(key));
+            results.add(new TransactionResult(true));
         }
 
         Block block = new Block(
-                new BlockHeader(1, coinbase, prevHash, timestamp, MerkleUtil.computeTransactionsRoot(transactions),
-                        MerkleUtil.computeResultsRoot(transactionResults), Bytes.EMPTY_HASH, Bytes.EMPTY_BYTES),
-                transactions, transactionResults);
-        blockchain.addBlock(block);
+                new BlockHeader(1, coinbase, prevHash, timestamp, MerkleUtil.computeTransactionsRoot(txs),
+                        MerkleUtil.computeResultsRoot(results), Bytes.EMPTY_HASH, Bytes.EMPTY_BYTES),
+                txs, results);
+        return block;
+    }
 
+    /**
+     * The benchmark tries to create a block filled with multi-recipient TRANSFER transactions
+     */
+    private static void testLargeBlockMultiRecipients(DBFactory dbFactory) {
+        logger.info("Binary-searching the maximum number of recipients per block...");
+
+        Instant begin = Instant.now();
+
+        Config config = new DevNetConfig(Constants.DEFAULT_DATA_DIR);
+        BlockchainImpl blockchain = new BlockchainImpl(config, dbFactory);
+
+        int low = 1, high = config.maxBlockSize() / EdDSA.ADDRESS_LEN, numberOfRecipients = (low + high) / 2;
+        Block block = makeMultiRecipientBlock(numberOfRecipients);
+        while(high - low > 1) {
+            System.out.format("low = %d, mid = %d, high = %d\n", low, numberOfRecipients, high);
+
+            if (block.size() > config.maxBlockSize()) {
+                high = numberOfRecipients;
+            } else {
+                low = numberOfRecipients;
+            }
+            numberOfRecipients = (low + high) / 2;
+            block = makeMultiRecipientBlock(numberOfRecipients);
+        }
+
+        blockchain.addBlock(block);
         Duration duration = Duration.between(begin, Instant.now());
 
-        logger.info("Block Size = {} bytes, took {}\n", block.size(), TimeUtil.formatDuration(duration));
+        logger.info("Multi-Recipient Block Size = {} bytes, {} recipients, took {}\n", block.size(), numberOfRecipients, TimeUtil.formatDuration(duration));
+    }
+
+    private static Block makeMultiRecipientBlock(int numberOfRecipients) {
+        Transaction tx = new Transaction(TransactionType.TRANSFER, Bytes.random(numberOfRecipients * EdDSA.ADDRESS_LEN), value, fee,
+                nonce + numberOfRecipients, timestamp, data).sign(key);
+        List<TransactionResult> results = Arrays.asList(new TransactionResult(true));
+        List<Transaction> txs = Arrays.asList(tx);
+        Block block = new Block(
+                new BlockHeader(1, coinbase, prevHash, timestamp, MerkleUtil.computeTransactionsRoot(txs),
+                        MerkleUtil.computeResultsRoot(results), Bytes.EMPTY_HASH, Bytes.EMPTY_BYTES),
+                txs, results);
+        return block;
     }
 
     public static void main(String[] args) throws Throwable {
         TemporaryDBRule temporaryDBFactory = new TemporaryDBRule();
         temporaryDBFactory.before();
-        testLargeBlock(temporaryDBFactory);
+        testLargeBlockSingleRecipient(temporaryDBFactory);
+        temporaryDBFactory.after();
+
+        temporaryDBFactory = new TemporaryDBRule();
+        temporaryDBFactory.before();
+        testLargeBlockMultiRecipients(temporaryDBFactory);
         temporaryDBFactory.after();
     }
 }

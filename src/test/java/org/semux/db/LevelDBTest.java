@@ -23,13 +23,18 @@ import org.iq80.leveldb.DBException;
 import org.iq80.leveldb.Options;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.semux.config.Constants;
 import org.semux.db.LevelDB.LevelDBFactory;
 import org.semux.util.Bytes;
 import org.semux.util.ClosableIterator;
 
 public class LevelDBTest {
+
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     private byte[] key = Bytes.of("key");
     private byte[] value = Bytes.of("value");
@@ -38,17 +43,18 @@ public class LevelDBTest {
 
     @Before
     public void setup() {
-        db = new LevelDB(new File(Constants.DEFAULT_DATA_DIR, Constants.DATABASE_DIR + File.separator + "test"));
+        db = new LevelDB(temporaryFolder.getRoot());
     }
 
     @After
     public void teardown() {
-        db.close();
+        db.destroy();
     }
 
     @Test
     public void testRecover() {
         Options options = db.createOptions();
+        db.close();
         db.recover(options);
     }
 

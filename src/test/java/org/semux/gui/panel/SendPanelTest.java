@@ -59,9 +59,12 @@ public class SendPanelTest {
         window.show();
 
         // fill form
-        EdDSA recipient = new EdDSA();
-        window.textBox("toText").setText(Hex.encode0x(recipient.toAddress()));
+        EdDSA recipient1 = new EdDSA();
+        EdDSA recipient2 = new EdDSA();
+        window.textBox("toText")
+                .setText(Hex.encode0x(recipient1.toAddress()) + "," + Hex.encode0x(recipient2.toAddress()));
         window.textBox("amountText").setText("100");
+        window.textBox("feeText").setText("0.10");
         window.button("sendButton").click();
 
         // a confirmation dialog should be displayed
@@ -74,9 +77,12 @@ public class SendPanelTest {
         verify(pendingManager).addTransactionSync(transactionArgumentCaptor.capture());
         Transaction tx = transactionArgumentCaptor.getValue();
         assertEquals(TransactionType.TRANSFER, tx.getType());
-        assertArrayEquals(recipient.toAddress(), tx.getTo());
+
+        assertEquals(2, tx.numberOfRecipients());
+        assertArrayEquals(recipient1.toAddress(), tx.getRecipient(0));
+        assertArrayEquals(recipient2.toAddress(), tx.getRecipient(1));
         assertEquals(100 * Unit.SEM, tx.getValue());
-        assertEquals(application.kernelMock.getConfig().minTransactionFee(), tx.getFee());
+        assertEquals(application.kernelMock.getConfig().minTransactionFee() * 2, tx.getFee());
 
         // clean up
         window.cleanUp();

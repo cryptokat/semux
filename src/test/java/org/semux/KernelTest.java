@@ -7,16 +7,20 @@
 package org.semux;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.semux.integration.KernelTestRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KernelTest {
+
+    private Logger logger = LoggerFactory.getLogger(KernelTest.class);
 
     @Rule
     public KernelTestRule kernelRule = new KernelTestRule(15160, 15170);
@@ -29,29 +33,31 @@ public class KernelTest {
         Kernel kernel = kernelRule.getKernelMock();
 
         // start kernel
+        Instant begin = Instant.now();
         kernel.start();
-        await().until(kernel::isRunning);
-
-        assertTrue(kernel.getNodeManager().isRunning());
-        assertTrue(kernel.getPendingManager().isRunning());
-
-        assertTrue(kernel.getApi().isRunning());
-        assertTrue(kernel.getP2p().isRunning());
-
-        assertTrue(kernel.getConsensus().isRunning());
-        assertFalse(kernel.getSyncManager().isRunning());
+        await().until(() -> //
+        kernel.isRunning() && //
+                kernel.getNodeManager().isRunning() && //
+                kernel.getPendingManager().isRunning() && //
+                kernel.getApi().isRunning() && //
+                kernel.getP2p().isRunning() && //
+                kernel.getConsensus().isRunning() && //
+                !kernel.getSyncManager().isRunning() //
+        );
+        logger.info("Kernel successfully started after {} ms", Duration.between(begin, Instant.now()).toMillis());
 
         // stop kernel
+        begin = Instant.now();
         kernel.stop();
-        await().until(() -> !kernel.isRunning());
-
-        assertFalse(kernel.getNodeManager().isRunning());
-        assertFalse(kernel.getPendingManager().isRunning());
-
-        assertFalse(kernel.getApi().isRunning());
-        assertFalse(kernel.getP2p().isRunning());
-
-        assertFalse(kernel.getConsensus().isRunning());
-        assertFalse(kernel.getSyncManager().isRunning());
+        await().until(() -> //
+        !kernel.isRunning() && //
+                !kernel.getNodeManager().isRunning() && //
+                !kernel.getPendingManager().isRunning() && //
+                !kernel.getApi().isRunning() && //
+                !kernel.getP2p().isRunning() && //
+                !kernel.getConsensus().isRunning() && //
+                !kernel.getSyncManager().isRunning() //
+        );
+        logger.info("Kernel successfully stopped after {} ms", Duration.between(begin, Instant.now()).toMillis());
     }
 }

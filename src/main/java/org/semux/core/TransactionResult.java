@@ -52,6 +52,11 @@ public class TransactionResult {
         INVALID_DATA_LENGTH,
 
         /**
+         * The number of recipients is invalid.
+         */
+        INVALID_NUMBER_OF_RECIPIENTS,
+
+        /**
          * Insufficient available balance.
          */
         INSUFFICIENT_AVAILABLE,

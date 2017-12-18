@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.ParseException;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -25,11 +27,14 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.semux.Kernel;
 import org.semux.config.Config;
 import org.semux.core.PendingManager;
 import org.semux.core.Transaction;
 import org.semux.core.TransactionType;
+import org.semux.crypto.CryptoException;
 import org.semux.crypto.EdDSA;
 import org.semux.crypto.Hex;
 import org.semux.gui.Action;
@@ -98,6 +103,7 @@ public class SendPanel extends JPanel implements ActionListener {
         lblFee.setToolTipText(GUIMessages.get("FeeTip", SwingUtil.formatValue(config.minTransactionFee())));
 
         feeText = SwingUtil.textFieldWithCopyPastePopup();
+        feeText.setName("feeText");
         feeText.setColumns(10);
         feeText.setActionCommand(Action.SEND.name());
         feeText.addActionListener(this);
@@ -206,14 +212,12 @@ public class SendPanel extends JPanel implements ActionListener {
         clear();
     }
 
-    // TODO: clean methods below
-
     public String getToText() {
         return toText.getText().trim();
     }
 
-    public void setToText(byte[] address) {
-        toText.setText(Hex.encode(address));
+    public void setToText(byte[] addr) {
+        toText.setText(Hex.encode(addr));
     }
 
     public long getAmountText() throws ParseException {
@@ -255,8 +259,10 @@ public class SendPanel extends JPanel implements ActionListener {
                 long fee = getFeeText();
                 String data = getDataText();
 
-                // decode0x recipient address
-                byte[] to = Hex.decode0x(getToText());
+                // parse recipient address
+                String[] toList = StringUtils.split(getToText(), ",");
+                byte[] to = Stream.of(toList).map(String::trim).map(Hex::decode0x).reduce(new byte[0],
+                        ArrayUtils::addAll);
 
                 if (acc == null) {
                     JOptionPane.showMessageDialog(this, GUIMessages.get("SelectAccount"));
@@ -267,13 +273,18 @@ public class SendPanel extends JPanel implements ActionListener {
                 } else if (value + fee > acc.getAvailable()) {
                     JOptionPane.showMessageDialog(this,
                             GUIMessages.get("InsufficientFunds", SwingUtil.formatValue(value + fee)));
-                } else if (to.length != EdDSA.ADDRESS_LEN) {
+                } else if (to.length < EdDSA.ADDRESS_LEN || to.length % EdDSA.ADDRESS_LEN != 0) {
                     JOptionPane.showMessageDialog(this, GUIMessages.get("InvalidReceivingAddress"));
-                } else if (Bytes.of(data).length > 128) {
+                } else if (Bytes.of(data).length > config.maxTransferDataSize()) {
                     JOptionPane.showMessageDialog(this, GUIMessages.get("InvalidData", 128));
                 } else {
+                    String recipients = Stream.of(toList)
+                            .map(String::trim)
+                            .map(Hex::decode0x)
+                            .map(Hex::encode0x)
+                            .collect(Collectors.joining(","));
                     int ret = JOptionPane.showConfirmDialog(this,
-                            GUIMessages.get("TransferInfo", SwingUtil.formatValue(value), Hex.encode0x(to)),
+                            GUIMessages.get("TransferInfo", SwingUtil.formatValue(value), recipients),
                             GUIMessages.get("ConfirmTransfer"), JOptionPane.YES_NO_OPTION);
                     if (ret != JOptionPane.YES_OPTION) {
                         break;
@@ -281,17 +292,27 @@ public class SendPanel extends JPanel implements ActionListener {
 
                     PendingManager pendingMgr = kernel.getPendingManager();
 
+                    int numberOfRecipients = to.length / EdDSA.ADDRESS_LEN;
                     TransactionType type = TransactionType.TRANSFER;
                     byte[] from = acc.getKey().toAddress();
                     long nonce = pendingMgr.getNonce(from);
                     long timestamp = System.currentTimeMillis();
-                    Transaction tx = new Transaction(type, to, value, fee, nonce, timestamp, Bytes.of(data));
+                    Transaction tx = new Transaction(
+                            type,
+                            to,
+                            value,
+                            Math.max(fee, config.minTransactionFee() * numberOfRecipients),
+                            nonce,
+                            timestamp,
+                            Bytes.of(data));
                     tx.sign(acc.getKey());
 
                     sendTransaction(pendingMgr, tx);
                 }
             } catch (ParseException ex) {
                 JOptionPane.showMessageDialog(this, "Exception: " + ex.getMessage());
+            } catch (CryptoException ex) {
+                JOptionPane.showMessageDialog(this, GUIMessages.get("InvalidReceivingAddress"));
             }
             break;
         case CLEAR:

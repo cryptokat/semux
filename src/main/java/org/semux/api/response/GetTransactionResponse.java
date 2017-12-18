@@ -7,7 +7,10 @@
 package org.semux.api.response;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.semux.api.ApiHandlerResponse;
 import org.semux.core.Transaction;
@@ -40,7 +43,7 @@ public class GetTransactionResponse extends ApiHandlerResponse {
         public final String from;
 
         @JsonProperty("to")
-        public final String to;
+        public final List<String> to;
 
         @JsonProperty("value")
         public final Long value;
@@ -64,7 +67,7 @@ public class GetTransactionResponse extends ApiHandlerResponse {
                 @JsonProperty("hash") String hash, //
                 @JsonProperty("type") String type, //
                 @JsonProperty("from") String from, //
-                @JsonProperty("to") String to, //
+                @JsonProperty("to") List<String> to, //
                 @JsonProperty("value") Long value, //
                 @JsonProperty("fee") Long fee, //
                 @JsonProperty("nonce") Long nonce, //
@@ -85,16 +88,18 @@ public class GetTransactionResponse extends ApiHandlerResponse {
         }
 
         public Result(Transaction tx) {
-            this(Hex.encode0x(tx.getHash()), //
+            this(
+                    Hex.encode0x(tx.getHash()), //
                     tx.getType().toString(), //
                     Hex.encode0x(tx.getFrom()), //
-                    Hex.encode0x(tx.getTo()), //
+                    Arrays.stream(tx.getRecipients()).map(Hex::encode0x).collect(Collectors.toList()), //
                     tx.getValue(), //
                     tx.getFee(), //
                     tx.getNonce(), //
                     tx.getTimestamp(), //
                     new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(tx.getTimestamp())), //
-                    Hex.encode0x(tx.getData()));
+                    Hex.encode0x(tx.getData()) //
+            );
         }
     }
 }

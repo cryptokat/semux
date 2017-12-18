@@ -7,8 +7,11 @@
 package org.semux.integration;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
@@ -67,7 +70,10 @@ public class TransferTest {
     KernelTestRule kernelSenderRule = new KernelTestRule(51620, 51720);
 
     @Rule
-    KernelTestRule kernelReceiverRule = new KernelTestRule(51630, 51730);
+    KernelTestRule kernelReceiver1Rule = new KernelTestRule(51630, 51730);
+
+    @Rule
+    KernelTestRule kernelReceiver2Rule = new KernelTestRule(51640, 51740);
 
     /**
      * The kernel that is solely responsible of forging blocks
@@ -82,7 +88,7 @@ public class TransferTest {
     /**
      * The kernels who will receive transaction from kernelPremine
      */
-    public KernelMock kernelReceiver;
+    public KernelMock kernelReceiver1, kernelReceiver2;
 
     public TransferTest() throws IOException {
     }
@@ -92,7 +98,8 @@ public class TransferTest {
         // prepare kernels
         kernelValidator = kernelValidatorRule.getKernelMock();
         kernelPremine = kernelSenderRule.getKernelMock();
-        kernelReceiver = kernelReceiverRule.getKernelMock();
+        kernelReceiver1 = kernelReceiver1Rule.getKernelMock();
+        kernelReceiver2 = kernelReceiver2Rule.getKernelMock();
 
         // mock genesis.json
         Genesis genesis = mockGenesis();
@@ -113,7 +120,8 @@ public class TransferTest {
         // start kernels
         kernelValidator.start();
         kernelPremine.start();
-        kernelReceiver.start();
+        kernelReceiver1.start();
+        kernelReceiver2.start();
     }
 
     @After
@@ -121,7 +129,8 @@ public class TransferTest {
         // stop kernels
         kernelValidator.stop();
         kernelPremine.stop();
-        kernelReceiver.stop();
+        kernelReceiver1.stop();
+        kernelReceiver2.stop();
     }
 
     /**
@@ -138,15 +147,16 @@ public class TransferTest {
         // wait
         await().until(() -> kernelValidator.isRunning());
         await().until(() -> kernelPremine.isRunning());
-        await().until(() -> kernelReceiver.isRunning());
+        await().until(() -> kernelReceiver1.isRunning());
+        await().until(() -> kernelReceiver2.isRunning());
 
-        // make transfer_many request from kernelPremine to kernelReceiver1 and
+        // make transfer request from kernelPremine to kernelReceiver1 and
         // kernelReceiver2
         final long value = 1000 * Unit.SEM;
         final long fee = kernelPremine.getConfig().minTransactionFee() * 2;
         HashMap<String, Object> params = new HashMap<>();
         params.put("from", addressStringOf(kernelPremine));
-        params.put("to", addressStringOf(kernelReceiver));
+        params.put("to", addressStringOf(kernelReceiver1) + "," + addressStringOf(kernelReceiver2));
         params.put("value", String.valueOf(value));
         params.put("fee", String.valueOf(fee));
         logger.info("Making transfer request", params);
@@ -160,18 +170,22 @@ public class TransferTest {
         // (2x transaction value + 2x min transaction fee) should be deducted from
         // kernelPremine's account
         logger.info("Waiting for the transaction to be processed...");
-        await().until(availableOf(kernelPremine), equalTo(PREMINE * Unit.SEM - value - fee));
-        await().until(availableOf(kernelReceiver), equalTo(value));
+        await().until(availableOf(kernelPremine), equalTo(PREMINE * Unit.SEM - value * 2 - fee));
+        await().until(availableOf(kernelReceiver1), equalTo(value));
+        await().until(availableOf(kernelReceiver2), equalTo(value));
 
         // assert that the transaction has been recorded across nodes
         assertTransferTransaction(kernelPremine);
-        assertTransferTransaction(kernelReceiver);
+        assertTransferTransaction(kernelReceiver1);
+        assertTransferTransaction(kernelReceiver2);
     }
 
     private void assertTransferTransaction(KernelMock kernelMock) throws IOException {
-        GetTransactionResponse.Result result = getTransactionResultOf(kernelMock, 0);
-        assertEquals(addressStringOf(kernelPremine), result.from);
-        assertEquals(result.to, addressStringOf(kernelReceiver));
+        GetTransactionResponse.Result transactionResultPremine = getTransactionResultOf(kernelMock, 0);
+        assertEquals(addressStringOf(kernelPremine), transactionResultPremine.from);
+        assertNotNull(transactionResultPremine.to);
+        assertThat(transactionResultPremine.to,
+                contains(addressStringOf(kernelReceiver1), addressStringOf(kernelReceiver2)));
     }
 
     private Callable<Long> availableOf(KernelMock kernelMock) {

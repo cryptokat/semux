@@ -6,6 +6,9 @@
  */
 package org.semux.api.util;
 
+import java.util.List;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.semux.Kernel;
 import org.semux.core.Transaction;
 import org.semux.core.TransactionType;
@@ -76,22 +79,22 @@ public class TransactionBuilder {
         return this;
     }
 
-    public TransactionBuilder withTo(String toStr) {
+    public TransactionBuilder withTo(List<String> toList) {
         if (type == TransactionType.DELEGATE) {
-            if (toStr != null) {
+            if (toList != null && !toList.isEmpty()) {
                 throw new IllegalArgumentException("Parameter `to` is not needed for DELEGATE transaction");
             }
             return this; // ignore the provided parameter
         }
 
-        if (toStr == null) {
+        if (toList == null || toList.isEmpty()) {
             throw new IllegalArgumentException("Parameter `to` can't be null");
         }
 
         try {
-            this.to = Hex.decode0x(toStr);
+            this.to = toList.stream().map(String::trim).map(Hex::decode0x).reduce(new byte[0], ArrayUtils::addAll);
         } catch (CryptoException e) {
-            throw new IllegalArgumentException("Parameter `to` is not a valid hexadecimal string");
+            throw new IllegalArgumentException("Parameter 'to' contains invalid hexadecimal string");
         }
 
         return this;

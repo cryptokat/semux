@@ -8,11 +8,15 @@ package org.semux.api.util;
 
 import static org.mockito.Mockito.mock;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.semux.Kernel;
 import org.semux.core.TransactionType;
+import org.semux.crypto.EdDSA;
 
 public class TransactionBuilderTest {
 
@@ -22,12 +26,25 @@ public class TransactionBuilderTest {
     @Test
     public void testDelegateWithTo() {
         expectedException.expect(IllegalArgumentException.class);
-        new TransactionBuilder(mock(Kernel.class), TransactionType.DELEGATE).withTo("0xabc");
+        new TransactionBuilder(mock(Kernel.class), TransactionType.DELEGATE)
+                .withTo(Collections.singletonList(new EdDSA().toAddressString()));
     }
 
     @Test
     public void testDelegateWithValue() {
         expectedException.expect(IllegalArgumentException.class);
         new TransactionBuilder(mock(Kernel.class), TransactionType.DELEGATE).withValue("10");
+    }
+
+    @Test
+    public void testTransferWithoutTo() {
+        expectedException.expect(IllegalArgumentException.class);
+        new TransactionBuilder(mock(Kernel.class), TransactionType.TRANSFER).withTo(new ArrayList<>());
+    }
+
+    @Test
+    public void testTransferWithTo() {
+        new TransactionBuilder(mock(Kernel.class), TransactionType.TRANSFER)
+                .withTo(Collections.singletonList(new EdDSA().toAddressString()));
     }
 }

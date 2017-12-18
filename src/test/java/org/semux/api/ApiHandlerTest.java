@@ -6,6 +6,7 @@
  */
 package org.semux.api;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -18,11 +19,15 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -278,6 +283,22 @@ public class ApiHandlerTest extends ApiHandlerTestBase {
         assertTrue(response.success);
         assertEquals(Hex.encode0x(tx.getHash()), response.transaction.hash);
         assertNotNull(response.transaction.to);
+        assertThat(response.transaction.to, IsCollectionWithSize.hasSize(1));
+    }
+
+    @Test
+    public void testGetTransactionToMany() throws IOException {
+        Transaction tx = createTransactionToMany(2);
+        TransactionResult res = new TransactionResult(true);
+        Block block = createBlock(chain, Collections.singletonList(tx), Collections.singletonList(res));
+        chain.addBlock(block);
+
+        String uri = "/get_transaction?hash=" + Hex.encode(tx.getHash());
+        GetTransactionResponse response = request(uri, GetTransactionResponse.class);
+        assertTrue(response.success);
+        assertEquals(Hex.encode0x(tx.getHash()), response.transaction.hash);
+        assertNotNull(response.transaction.to);
+        assertThat(response.transaction.to, IsCollectionWithSize.hasSize(2));
     }
 
     @Test
@@ -396,6 +417,33 @@ public class ApiHandlerTest extends ApiHandlerTestBase {
         assertFalse(list.isEmpty());
         assertArrayEquals(list.get(list.size() - 1).getHash(), Hex.decode0x(response.txHash));
         assertEquals(list.get(list.size() - 1).getType(), TransactionType.TRANSFER);
+    }
+
+    @Test
+    public void testTransferMany() throws IOException, InterruptedException {
+        int numberOfRecipients = 200;
+        ArrayList<EdDSA> keys = new ArrayList<>();
+        for (int i = 0; i < numberOfRecipients; i++) {
+            keys.add(new EdDSA());
+        }
+        String keyParams = keys.stream().map(EdDSA::toAddressString).collect(Collectors.joining(","));
+
+        String uri = "/transfer";
+        String body = "from=" + wallet.getAccount(0).toAddressString() +
+                "&to=" + keyParams +
+                "&value=1000000000&fee=" + config.minTransactionFee() * numberOfRecipients +
+                "&data=" + Hex.encode("test_data".getBytes());
+        DoTransactionResponse response = postRequest(uri, body, DoTransactionResponse.class);
+        assertTrue(response.success);
+        assertNotNull(response.txHash);
+
+        TimeUnit.MILLISECONDS.sleep(200);
+
+        List<Transaction> list = pendingMgr.getTransactions();
+        assertFalse(list.isEmpty());
+        assertArrayEquals(list.get(list.size() - 1).getHash(), Hex.decode0x(response.txHash));
+        assertEquals(TransactionType.TRANSFER, list.get(list.size() - 1).getType());
+        assertEquals(numberOfRecipients, list.get(list.size() - 1).numberOfRecipients());
     }
 
     @Test

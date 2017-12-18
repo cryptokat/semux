@@ -9,11 +9,13 @@ package org.semux.api;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.semux.Kernel;
 import org.semux.api.response.AddNodeResponse;
 import org.semux.api.response.CreateAccountResponse;
@@ -608,7 +610,7 @@ public class ApiHandlerImpl implements ApiHandler {
         try {
             TransactionBuilder transactionBuilder = new TransactionBuilder(kernel, type) //
                     .withFrom(params.get("from")) //
-                    .withTo(params.get("to")) //
+                    .withTo(Arrays.asList(StringUtils.split(params.getOrDefault("to", ""), ","))) //
                     .withValue(params.get("value")) //
                     .withFee(params.get("fee")) //
                     .withData(params.get("data"));
