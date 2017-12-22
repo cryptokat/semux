@@ -12,10 +12,12 @@ import java.io.IOException;
 import org.semux.util.exception.SimpleEncoderException;
 
 public class SimpleEncoder {
-    private ByteArrayOutputStream out;
+    private PoolingByteArrayOutputStream out;
+
+    private static final ByteArrayPool pool = new ByteArrayPool(1024 * 1024);
 
     public SimpleEncoder() {
-        this.out = new ByteArrayOutputStream();
+        this.out = new PoolingByteArrayOutputStream(pool);
     }
 
     public SimpleEncoder(byte[] toAppend) {

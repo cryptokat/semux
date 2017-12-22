@@ -30,6 +30,7 @@ public final class EdDSAPublicKeyCache {
      * The cache is a concurrent hash map of ByteArray.of(pubKey) -> EdDSAPublicKey
      */
     private static final Cache<ByteArray, EdDSAPublicKey> pubKeyCache = Caffeine.newBuilder()
+            .softValues()
             .maximumSize(MAX_CACHE_SIZE).build();
 
     private EdDSAPublicKeyCache() {

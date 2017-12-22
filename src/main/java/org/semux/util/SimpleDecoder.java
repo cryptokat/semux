@@ -13,6 +13,8 @@ import org.semux.util.exception.SimpleDecoderException;
 public class SimpleDecoder {
     private static final String ENCODING = "UTF-8";
 
+    private static final ByteArrayPool pool = new ByteArrayPool(1024 * 1024);
+
     private byte[] in;
     private int from;
     private int to;
@@ -75,7 +77,7 @@ public class SimpleDecoder {
         int len = readInt();
 
         require(len);
-        byte[] buf = new byte[len];
+        byte[] buf = pool.getBuf(len);
         System.arraycopy(in, index, buf, 0, len);
         index += len;
 
@@ -86,12 +88,14 @@ public class SimpleDecoder {
         int len = readInt();
 
         require(len);
-        byte[] buf = new byte[len];
+        byte[] buf = pool.getBuf(len);
         System.arraycopy(in, index, buf, 0, len);
         index += len;
 
         try {
-            return new String(buf, ENCODING);
+            String str = new String(buf, ENCODING);
+            pool.returnBuf(buf);
+            return str;
         } catch (UnsupportedEncodingException e) {
             throw new SimpleDecoderException(e);
         }

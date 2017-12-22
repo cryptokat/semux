@@ -54,6 +54,8 @@ import org.semux.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
+
 /**
  * Syncing manager downloads blocks from the network and imports them into
  * blockchain.
@@ -94,7 +96,7 @@ public class SemuxSync implements SyncManager {
     private ChannelManager channelMgr;
 
     // task queues
-    private TreeSet<Long> toDownload = new TreeSet<>();
+    private LongAVLTreeSet toDownload = new LongAVLTreeSet();
     private Map<Long, Long> toComplete = new HashMap<>();
     private TreeSet<Pair<Block, Channel>> toProcess = new TreeSet<>(
             Comparator.comparingLong(o -> o.getKey().getNumber()));
@@ -224,7 +226,7 @@ public class SemuxSync implements SyncManager {
 
                 if (entry.getValue() + MAX_DOWNLOAD_TIME < now) {
                     logger.debug("Downloading of block #{} has expired", entry.getKey());
-                    toDownload.add(entry.getKey());
+                    toDownload.add((long) entry.getKey());
                     itr.remove();
                 }
             }
@@ -233,7 +235,7 @@ public class SemuxSync implements SyncManager {
             if (toDownload.isEmpty()) {
                 return;
             }
-            Long task = toDownload.first();
+            long task = toDownload.firstLong();
 
             // quit if too many unfinished jobs
             if (toComplete.size() > MAX_UNFINISHED_JOBS) {
