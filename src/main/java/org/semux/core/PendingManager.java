@@ -261,10 +261,11 @@ public class PendingManager implements Runnable, BlockchainListener {
             // clear transaction pool
             List<PendingTransaction> txs = clear();
 
-            // update pending state
+            // re-process & broadcast remaining transactions in the transaction pool against
+            // the latest blockchain
             long accepted = 0;
             for (PendingTransaction tx : txs) {
-                accepted += processTransaction(tx.transaction, false).accepted;
+                accepted += processTransaction(tx.transaction, true).accepted;
             }
 
             long t2 = System.currentTimeMillis();

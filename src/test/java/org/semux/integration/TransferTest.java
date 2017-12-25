@@ -139,7 +139,7 @@ public class TransferTest {
 
         // make transfer transaction
         final long value = 1000 * Unit.SEM;
-        final long fee = kernelPremine.getConfig().minTransactionFee() * 2;
+        final long fee = kernelPremine.getConfig().minTransactionFee();
         HashMap<String, Object> params = new HashMap<>();
         params.put("from", addressStringOf(kernelPremine));
         params.put("to", addressStringOf(kernelReceiver));
