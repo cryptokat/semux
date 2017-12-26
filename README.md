@@ -4,6 +4,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/y0kgfqch4u79er1k?svg=true)](https://ci.appveyor.com/project/semux/semux)
 [![Coverage Status](https://coveralls.io/repos/github/semuxproject/semux/badge.svg?branch=develop)](https://coveralls.io/github/semuxproject/semux)
 [![Scrutinizer-CI Status](https://scrutinizer-ci.com/g/semuxproject/semux/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/semuxproject/semux/)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcryptokat%2Fsemux.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcryptokat%2Fsemux?ref=badge_shield)
 
 ## What is Semux
 
@@ -52,3 +53,6 @@ https://crowdin.com/project/semux
 ## License
 
 [The MIT License](./LICENSE)
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcryptokat%2Fsemux.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcryptokat%2Fsemux?ref=badge_large)
