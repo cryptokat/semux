@@ -88,6 +88,22 @@
                 </configuration>
             </plugin>
 
+            <!-- build source jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- build windows executable -->
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
@@ -154,6 +170,8 @@
                                         <include name="semux.exe"/>
                                     </fileset>
                                 </copy>
+                                <copy file="${project.basedir}/target/semux-${project.version}-sources.jar"
+                                      tofile="${dist.base}/windows/semux-sources.jar"/>
                                 <copy file="${project.basedir}/misc/launch4j/semux.l4j.ini"
                                       tofile="${dist.base}/windows/semux.l4j.ini"/>
                                 <copy file="${project.basedir}/src/main/resources/logback.xml"
@@ -171,6 +189,8 @@
                                 </copy>
                                 <copy file="${project.basedir}/target/semux-${project.version}-shaded.jar"
                                       tofile="${dist.base}/linux/semux.jar"/>
+                                <copy file="${project.basedir}/target/semux-${project.version}-sources.jar"
+                                      tofile="${dist.base}/linux/semux-sources.jar"/>
                                 <copy file="${project.basedir}/scripts/semux-cli.sh"
                                       tofile="${dist.base}/linux/semux-cli.sh"/>
                                 <copy file="${project.basedir}/scripts/semux-gui.sh"
