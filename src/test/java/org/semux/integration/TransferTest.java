@@ -102,8 +102,8 @@ public class TransferTest {
         // mock seed nodes
         Set<NodeManager.Node> nodes = new HashSet<>();
         nodes.add(new NodeManager.Node( //
-            InetAddress.getByName(kernelValidator.getConfig().p2pListenIp()), //
-            kernelValidator.getConfig().p2pListenPort() //
+                InetAddress.getByName(kernelValidator.getConfig().p2pListenIp()), //
+                kernelValidator.getConfig().p2pListenPort() //
         ));
         mockStatic(NodeManager.class);
         when(NodeManager.getSeedNodes(Constants.DEV_NET_ID)).thenReturn(nodes);
