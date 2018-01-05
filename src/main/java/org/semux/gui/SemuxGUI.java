@@ -240,7 +240,7 @@ public class SemuxGUI extends Launcher {
         // set up model
         model = new WalletModel();
         model.setAddressBook(new AddressBook(new File(getDataDir(), "addressbook.json")));
-        model.setCoinbase(getCoinbase());
+        model.setCoinbase(wallet.getAccount(getCoinbase()));
 
         // set up kernel
         kernel = new Kernel(getConfig(), wallet, wallet.getAccount(getCoinbase()));
@@ -397,11 +397,11 @@ public class SemuxGUI extends Launcher {
     /**
      * Returns the min version of semux wallet.
      *
-     * @return
+     * @return the min version, or null if failed to retrieve
      */
     protected String getMinVersion() {
         try {
-            URL url = new URL("http://api.semux.org");
+            URL url = new URL("http://api.semux.org/version");
             URLConnection con = url.openConnection();
             con.addRequestProperty("User-Agent", Constants.DEFAULT_USER_AGENT);
             con.setConnectTimeout(Constants.DEFAULT_CONNECT_TIMEOUT);
