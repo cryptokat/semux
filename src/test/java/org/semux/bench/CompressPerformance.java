@@ -7,6 +7,7 @@
 package org.semux.bench;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.semux.config.Config;
 import org.semux.config.Constants;
@@ -15,7 +16,7 @@ import org.semux.core.Block;
 import org.semux.core.Blockchain;
 import org.semux.core.BlockchainImpl;
 import org.semux.db.LevelDb.LevelDbFactory;
-import org.semux.net.msg.consensus.BlockMessage;
+import org.semux.net.msg.consensus.BlocksMessage;
 import org.xerial.snappy.Snappy;
 
 public class CompressPerformance {
@@ -35,22 +36,24 @@ public class CompressPerformance {
             int transactions = 0;
             int size = 0;
             int sizeCompressed = 0;
-            long time = 0;
-            for (int i = 1; i <= chain.getLatestBlockNumber(); i++) {
+            long time = System.nanoTime();
+            ArrayList<Block> blockList = new ArrayList<>();
+            for (int i = 1; i <= chain.getLatestBlockNumber() && blocks < 64; i++) {
                 Block b = chain.getBlock(i);
-                BlockMessage m = new BlockMessage(b);
                 if (mode == Mode.BLOCKS_WITH_TX && b.getTransactions().isEmpty()) {
                     continue;
                 }
 
+                blockList.add(b);
                 blocks++;
                 transactions += b.getTransactions().size();
-                size += m.getEncoded().length;
-                long t1 = System.nanoTime();
-                sizeCompressed += Snappy.compress(m.getEncoded()).length;
-                long t2 = System.nanoTime();
-                time += t2 - t1;
             }
+            time = System.nanoTime() - time;
+
+            BlocksMessage blocksMessage = new BlocksMessage(blockList);
+            size = blocksMessage.getEncoded().length;
+            sizeCompressed = Snappy.compress(blocksMessage.getEncoded()).length;
+
             System.out.println("======================================");
             System.out.println(mode);
             System.out.println("======================================");
