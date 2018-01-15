@@ -15,7 +15,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +39,7 @@ import org.semux.gui.model.WalletAccount;
 import org.semux.gui.model.WalletModel;
 import org.semux.message.GuiMessages;
 import org.semux.util.ByteArray;
+import org.semux.util.Bytes;
 import org.semux.util.exception.UnreachableException;
 
 /**
@@ -189,8 +189,8 @@ public class TransactionsPanel extends JPanel implements ActionListener {
                 .parallelStream()
                 .filter(pendingTx -> {
                     for (WalletAccount acc : model.getAccounts()) {
-                        if (Arrays.equals(acc.getAddress(), pendingTx.transaction.getFrom()) ||
-                                Arrays.equals(acc.getAddress(), pendingTx.transaction.getTo())) {
+                        if (Bytes.equals(acc.getAddress(), pendingTx.transaction.getFrom()) ||
+                                Bytes.equals(acc.getAddress(), pendingTx.transaction.getTo())) {
                             return true;
                         }
                     }
@@ -221,7 +221,7 @@ public class TransactionsPanel extends JPanel implements ActionListener {
 
         if (tx != null) {
             for (int i = 0; i < transactions.size(); i++) {
-                if (Arrays.equals(tx.getHash(), transactions.get(i).getTransaction().getHash())) {
+                if (Bytes.equals(tx.getHash(), transactions.get(i).getTransaction().getHash())) {
                     table.setRowSelectionInterval(table.convertRowIndexToView(i), table.convertRowIndexToView(i));
                     break;
                 }

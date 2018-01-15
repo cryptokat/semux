@@ -304,7 +304,7 @@ public class DelegateStateImpl implements DelegateState {
             byte[] d = Arrays.copyOf(e.getKey(), 20);
             byte[] v = Arrays.copyOfRange(e.getKey(), 20, 40);
 
-            if (!Arrays.equals(delegate, d)) {
+            if (!Bytes.equals(delegate, d)) {
                 break;
             } else if (Bytes.toLong(e.getValue()) != 0) {
                 result.put(ByteArray.of(v), Bytes.toLong(e.getValue()));

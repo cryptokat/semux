@@ -7,7 +7,6 @@
 package org.semux.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -134,7 +133,7 @@ public class TransactionExecutor {
                 }
 
                 if (fee <= available && value <= available && value + fee <= available) {
-                    if (Arrays.equals(Bytes.EMPTY_ADDRESS, to) && ds.register(from, data)) {
+                    if (Bytes.equals(Bytes.EMPTY_ADDRESS, to) && ds.register(from, data)) {
 
                         as.adjustAvailable(from, -value - fee);
 

@@ -11,7 +11,6 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.ButtonGroup;
@@ -298,7 +297,7 @@ public class SendPanel extends JPanel implements ActionListener {
         boolean match = selectFrom.getItemCount() == list.size();
         if (match) {
             for (int i = 0; i < list.size(); i++) {
-                if (!Arrays.equals(selectFrom.getItemAt(i).account.getAddress(), list.get(i).getAddress())) {
+                if (!Bytes.equals(selectFrom.getItemAt(i).account.getAddress(), list.get(i).getAddress())) {
                     match = false;
                     break;
                 }
@@ -318,7 +317,7 @@ public class SendPanel extends JPanel implements ActionListener {
             // recover selected account
             if (selected != null) {
                 for (int i = 0; i < list.size(); i++) {
-                    if (Arrays.equals(list.get(i).getAddress(), selected.account.getAddress())) {
+                    if (Bytes.equals(list.get(i).getAddress(), selected.account.getAddress())) {
                         selectFrom.setSelectedIndex(i);
                         break;
                     }

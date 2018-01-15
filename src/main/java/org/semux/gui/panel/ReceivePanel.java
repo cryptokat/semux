@@ -14,7 +14,6 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,6 +42,7 @@ import org.semux.gui.SwingUtil;
 import org.semux.gui.model.WalletAccount;
 import org.semux.gui.model.WalletModel;
 import org.semux.message.GuiMessages;
+import org.semux.util.Bytes;
 import org.semux.util.exception.UnreachableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -244,7 +244,7 @@ public class ReceivePanel extends JPanel implements ActionListener {
 
         if (acc != null) {
             for (int i = 0; i < accounts.size(); i++) {
-                if (Arrays.equals(accounts.get(i).getKey().toAddress(), acc.getKey().toAddress())) {
+                if (Bytes.equals(accounts.get(i).getKey().toAddress(), acc.getKey().toAddress())) {
                     table.setRowSelectionInterval(table.convertRowIndexToView(i), table.convertRowIndexToView(i));
                     break;
                 }

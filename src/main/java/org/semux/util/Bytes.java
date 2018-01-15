@@ -268,4 +268,23 @@ public class Bytes {
                 | ((bytes[6] & 0xffL) << 8)
                 | (bytes[7] & 0xff);
     }
+
+    /**
+     * Check whether 2 byte arrays equal to each other
+     *
+     * @param a
+     * @param b
+     * @return
+     */
+    public static boolean equals(byte[] a, byte[] b) {
+        if (a == b) {
+            return true;
+        }
+
+        if (a == null || b == null) {
+            return false;
+        }
+
+        return FastByteComparator.equals(a, b);
+    }
 }

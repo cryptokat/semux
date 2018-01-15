@@ -103,7 +103,7 @@ public class Key {
     public Key(byte[] privateKey, byte[] publicKey) throws InvalidKeySpecException {
         this(privateKey);
 
-        if (!Arrays.equals(getPublicKey(), publicKey)) {
+        if (!Bytes.equals(getPublicKey(), publicKey)) {
             throw new InvalidKeySpecException("Public key and private key do not match!");
         }
     }
@@ -304,7 +304,7 @@ public class Key {
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof Key) && Arrays.equals(getPrivateKey(), ((Key) obj).getPrivateKey());
+        return (obj instanceof Key) && Bytes.equals(getPrivateKey(), ((Key) obj).getPrivateKey());
     }
 
 }

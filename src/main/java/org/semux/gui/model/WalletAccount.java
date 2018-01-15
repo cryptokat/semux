@@ -7,12 +7,12 @@
 package org.semux.gui.model;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.semux.core.Transaction;
 import org.semux.core.state.Account;
 import org.semux.crypto.Key;
+import org.semux.util.Bytes;
 
 public class WalletAccount extends Account {
     private Key key;
@@ -22,7 +22,7 @@ public class WalletAccount extends Account {
         super(acc.getAddress(), acc.getAvailable(), acc.getLocked(), acc.getNonce());
         this.key = key;
 
-        if (!Arrays.equals(key.toAddress(), acc.getAddress())) {
+        if (!Bytes.equals(key.toAddress(), acc.getAddress())) {
             throw new IllegalArgumentException("Key and account does not match");
         }
     }

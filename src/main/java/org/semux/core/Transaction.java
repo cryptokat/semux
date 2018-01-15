@@ -6,13 +6,12 @@
  */
 package org.semux.core;
 
-import java.util.Arrays;
-
 import org.semux.Network;
 import org.semux.crypto.Hash;
 import org.semux.crypto.Hex;
 import org.semux.crypto.Key;
 import org.semux.crypto.Key.Signature;
+import org.semux.util.Bytes;
 import org.semux.util.SimpleDecoder;
 import org.semux.util.SimpleEncoder;
 import org.xbill.DNS.Address;
@@ -136,7 +135,7 @@ public class Transaction {
                 && encoded != null
                 && signature != null
 
-                && Arrays.equals(Hash.h256(encoded), hash)
+                && Bytes.equals(Hash.h256(encoded), hash)
                 && Key.verify(hash, signature);
     }
 

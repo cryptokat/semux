@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -230,7 +229,7 @@ public class Wallet {
         // TODO: optimize account query
         synchronized (accounts) {
             for (Key key : accounts) {
-                if (Arrays.equals(key.toAddress(), address)) {
+                if (Bytes.equals(key.toAddress(), address)) {
                     return key;
                 }
             }
@@ -256,7 +255,7 @@ public class Wallet {
         // TODO: optimize duplicates check
         synchronized (accounts) {
             for (Key key : accounts) {
-                if (Arrays.equals(key.getPublicKey(), newKey.getPublicKey())) {
+                if (Bytes.equals(key.getPublicKey(), newKey.getPublicKey())) {
                     return false;
                 }
             }
@@ -302,7 +301,7 @@ public class Wallet {
         // TODO: optimize duplicates check
         synchronized (accounts) {
             for (Key k : accounts) {
-                if (Arrays.equals(k.getPublicKey(), key.getPublicKey())) {
+                if (Bytes.equals(k.getPublicKey(), key.getPublicKey())) {
                     accounts.remove(key);
                     return true;
                 }

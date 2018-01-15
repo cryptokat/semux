@@ -6,13 +6,16 @@
  */
 package org.semux.util;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
+import org.semux.crypto.Hash;
 
 public class BytesTest {
 
@@ -72,5 +75,32 @@ public class BytesTest {
         assertEquals(l1, Bytes.toLong(Bytes.of(l1)));
         assertEquals(l2, Bytes.toLong(Bytes.of(l2)));
         assertEquals(l3, Bytes.toLong(Bytes.of(l3)));
+    }
+
+    @Test
+    public void testEquals() {
+        byte[] bytes = Bytes.random(10);
+        byte[] a = Hash.h256(bytes);
+        byte[] b = Hash.h256(bytes);
+        assertTrue(Bytes.equals(a, b));
+
+        a = Bytes.EMPTY_BYTES;
+        b = Bytes.EMPTY_BYTES;
+        assertTrue(Bytes.equals(a, b));
+
+        a = null;
+        b = null;
+        assertTrue(Bytes.equals(a, b));
+    }
+
+    @Test
+    public void testNotEquals() {
+        byte[] a = Bytes.random(RandomUtils.nextInt(1, 10));
+        byte[] b = Bytes.random(RandomUtils.nextInt(1, 10));
+        assertFalse(Bytes.equals(a, b));
+
+        a = null;
+        b = Bytes.random(10);
+        assertFalse(Bytes.equals(a, b));
     }
 }

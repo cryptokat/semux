@@ -14,7 +14,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -376,7 +375,7 @@ public class DelegatesPanel extends JPanel implements ActionListener {
         boolean match = selectFrom.getItemCount() == list.size();
         if (match) {
             for (int i = 0; i < list.size(); i++) {
-                if (!Arrays.equals(selectFrom.getItemAt(i).account.getAddress(), list.get(i).getAddress())) {
+                if (!Bytes.equals(selectFrom.getItemAt(i).account.getAddress(), list.get(i).getAddress())) {
                     match = false;
                     break;
                 }
@@ -396,7 +395,7 @@ public class DelegatesPanel extends JPanel implements ActionListener {
             // recover selected account
             if (selected != null) {
                 for (int i = 0; i < list.size(); i++) {
-                    if (Arrays.equals(list.get(i).getAddress(), selected.account.getAddress())) {
+                    if (Bytes.equals(list.get(i).getAddress(), selected.account.getAddress())) {
                         selectFrom.setSelectedIndex(i);
                         break;
                     }
@@ -439,7 +438,7 @@ public class DelegatesPanel extends JPanel implements ActionListener {
 
         if (d != null) {
             for (int i = 0; i < delegates.size(); i++) {
-                if (Arrays.equals(d.getAddress(), delegates.get(i).getAddress())) {
+                if (Bytes.equals(d.getAddress(), delegates.get(i).getAddress())) {
                     table.setRowSelectionInterval(table.convertRowIndexToView(i), table.convertRowIndexToView(i));
                     break;
                 }

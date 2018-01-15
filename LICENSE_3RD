@@ -79,6 +79,11 @@ JAX-RS API
     http://jax-rs-spec.java.net
     CDDL License Version 1.1
 
+Guava: Google Core Libraries for Java
+    Copyright (C) 2009 The Guava Authors
+    https://github.com/google/guava/
+    Apache License, Version 2.0
+
 ================================================================================
 MIT License
 ================================================================================

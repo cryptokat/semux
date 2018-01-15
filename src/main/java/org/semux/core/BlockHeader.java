@@ -8,8 +8,6 @@ package org.semux.core;
 
 import static org.semux.crypto.Hash.HASH_LEN;
 
-import java.util.Arrays;
-
 import org.semux.crypto.Hash;
 import org.semux.crypto.Hex;
 import org.semux.crypto.Key;
@@ -111,10 +109,10 @@ public class BlockHeader {
                 && timestamp >= 0
                 && transactionsRoot != null && transactionsRoot.length == HASH_LEN
                 && resultsRoot != null && resultsRoot.length == HASH_LEN
-                && stateRoot != null && Arrays.equals(Bytes.EMPTY_HASH, stateRoot) // RESERVED FOR VM
+                && stateRoot != null && Bytes.equals(Bytes.EMPTY_HASH, stateRoot) // RESERVED FOR VM
                 && data != null && data.length <= MAX_DATA_SIZE
                 && encoded != null
-                && Arrays.equals(Hash.h256(encoded), hash);
+                && Bytes.equals(Hash.h256(encoded), hash);
     }
 
     public byte[] getHash() {

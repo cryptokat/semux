@@ -7,13 +7,13 @@
 package org.semux.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.semux.Network;
 import org.semux.crypto.Hex;
 import org.semux.crypto.Key.Signature;
+import org.semux.util.Bytes;
 import org.semux.util.MerkleUtil;
 import org.semux.util.SimpleDecoder;
 import org.semux.util.SimpleEncoder;
@@ -123,7 +123,7 @@ public class Block {
     public static boolean validateHeader(BlockHeader previous, BlockHeader header) {
         return header != null && header.validate()
                 && header.getNumber() == previous.getNumber() + 1
-                && Arrays.equals(header.getParentHash(), previous.getHash())
+                && Bytes.equals(header.getParentHash(), previous.getHash())
                 && header.getTimestamp() > previous.getTimestamp();
     }
 
@@ -144,7 +144,7 @@ public class Block {
 
         // validate transactions root
         byte[] root = MerkleUtil.computeTransactionsRoot(transactions);
-        return Arrays.equals(root, header.getTransactionsRoot());
+        return Bytes.equals(root, header.getTransactionsRoot());
     }
 
     /**
@@ -164,7 +164,7 @@ public class Block {
 
         // validate results root
         byte[] root = MerkleUtil.computeResultsRoot(results);
-        return Arrays.equals(root, header.getResultsRoot());
+        return Bytes.equals(root, header.getResultsRoot());
     }
 
     /**
