@@ -73,27 +73,7 @@ public abstract class FastByteComparator {
      * {@code Unsafe} isn't available.
      */
     private static class LexicographicalComparatorHolder {
-        static final String UNSAFE_COMPARATOR_NAME = LexicographicalComparatorHolder.class.getName()
-                + "$UnsafeComparator";
-
-        static final Comparator<byte[]> BEST_COMPARATOR = getBestComparator();
-
-        /**
-         * Returns the Unsafe-using Comparator, or falls back to the pure-Java
-         * implementation if unable to do so.
-         */
-        static Comparator<byte[]> getBestComparator() {
-            try {
-                Class<?> theClass = Class.forName(UNSAFE_COMPARATOR_NAME);
-
-                // yes, UnsafeComparator does implement Comparator<byte[]>
-                @SuppressWarnings("unchecked")
-                Comparator<byte[]> comparator = (Comparator<byte[]>) theClass.getEnumConstants()[0];
-                return comparator;
-            } catch (Throwable t) { // ensure we really catch *everything*
-                return lexicographicalComparatorJavaImpl();
-            }
-        }
+        static final Comparator<byte[]> BEST_COMPARATOR = lexicographicalComparatorJavaImpl();
 
         private enum PureJavaComparator implements Comparator<byte[]> {
             INSTANCE;
@@ -119,6 +99,5 @@ public abstract class FastByteComparator {
                 return length1 - length2;
             }
         }
-
     }
 }
