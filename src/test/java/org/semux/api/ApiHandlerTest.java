@@ -306,16 +306,18 @@ public class ApiHandlerTest extends ApiHandlerTestBase {
 
     @Test
     public void testSendTransaction() throws IOException, InterruptedException {
-        Transaction tx = createTransaction();
+        Key key = new Key();
+        accountState.adjustAvailable(key.toAddress(), 1000 * Unit.SEM);
+        Transaction tx = createTransaction(key, key, 10);
 
         String uri = "/send_transaction?raw=" + Hex.encode(tx.toBytes());
-        SendTransactionResponse response = request(uri, SendTransactionResponse.class);
+        DoTransactionResponse response = request(uri, DoTransactionResponse.class);
         assertTrue(response.success);
 
         Thread.sleep(200);
-        List<Transaction> list = pendingMgr.getQueue();
+        List<PendingManager.PendingTransaction> list = pendingMgr.getTransactions();
         assertFalse(list.isEmpty());
-        assertArrayEquals(list.get(list.size() - 1).getHash(), tx.getHash());
+        assertArrayEquals(list.get(list.size() - 1).transaction.getHash(), tx.getHash());
     }
 
     @Test

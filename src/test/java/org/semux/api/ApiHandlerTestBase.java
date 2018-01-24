@@ -23,6 +23,7 @@ import org.semux.core.PendingManager;
 import org.semux.core.Transaction;
 import org.semux.core.TransactionResult;
 import org.semux.core.TransactionType;
+import org.semux.core.Unit;
 import org.semux.core.Wallet;
 import org.semux.core.state.AccountState;
 import org.semux.core.state.DelegateState;
@@ -102,8 +103,8 @@ public abstract class ApiHandlerTestBase {
     protected Transaction createTransaction(Key from, Key to, long value) {
         Network network = config.network();
         TransactionType type = TransactionType.TRANSFER;
-        long fee = 0;
-        long nonce = 1;
+        long fee = 5 * Unit.MILLI_SEM;
+        long nonce = 0;
         long timestamp = System.currentTimeMillis();
         byte[] data = {};
 

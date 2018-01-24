@@ -55,7 +55,7 @@ public class PendingManager implements Runnable, BlockchainListener {
     public static final long ALLOWED_TIME_DRIFT = TimeUnit.HOURS.toMillis(2);
 
     private static final int QUEUE_MAX_SIZE = 128 * 1024;
-    private static final int TRANSACTIONS_MAX_SIZE = 16 * 1024;
+    private static final int TX_POOL_MAX_SIZE = 16 * 1024;
     private static final int DELAYED_MAX_SIZE = 32 * 1024;
     private static final int PROCESSED_MAX_SIZE = 32 * 1024;
 
@@ -71,7 +71,7 @@ public class PendingManager implements Runnable, BlockchainListener {
     /**
      * Transaction pool.
      */
-    private List<PendingTransaction> transactions = new ArrayList<>();
+    private List<PendingTransaction> txPool = new ArrayList<>();
 
     /**
      * Transaction cache.
@@ -165,11 +165,22 @@ public class PendingManager implements Runnable, BlockchainListener {
      * @return The processing result
      */
     public synchronized ProcessTransactionResult addTransactionSync(Transaction tx) {
-        if (/* queue/transactions limits are ignored */ tx.validate(kernel.getConfig().network())) {
-            return processTransaction(tx, true);
-        } else {
+        /* queue/transactions limits are ignored */
+        if (!tx.validate(kernel.getConfig().network())) {
             return new ProcessTransactionResult(0, TransactionResult.Error.INVALID_FORMAT);
         }
+
+        ByteArray key = ByteArray.of(tx.getHash());
+        if (processed.getIfPresent(key) != null) {
+            return new ProcessTransactionResult(0, TransactionResult.Error.FAILED);
+        }
+
+        ProcessTransactionResult transactionResult = processTransaction(tx, true);
+        if (transactionResult.accepted > 0) {
+            processed.put(key, tx);
+        }
+
+        return transactionResult;
     }
 
     /**
@@ -193,9 +204,9 @@ public class PendingManager implements Runnable, BlockchainListener {
 
         if (limit == -1) {
             // returns all transactions if there is no limit
-            txs.addAll(transactions);
+            txs.addAll(txPool);
         } else {
-            Iterator<PendingTransaction> it = transactions.iterator();
+            Iterator<PendingTransaction> it = txPool.iterator();
 
             int size = 0;
             while (it.hasNext()) {
@@ -243,8 +254,8 @@ public class PendingManager implements Runnable, BlockchainListener {
         pendingDS = kernel.getBlockchain().getDelegateState().track();
 
         // clear transaction pool
-        List<PendingTransaction> txs = new ArrayList<>(transactions);
-        transactions.clear();
+        List<PendingTransaction> txs = new ArrayList<>(txPool);
+        txPool.clear();
 
         return txs;
     }
@@ -260,7 +271,7 @@ public class PendingManager implements Runnable, BlockchainListener {
             // update pending state
             long accepted = 0;
             for (PendingTransaction tx : txs) {
-                accepted += processTransaction(tx.transaction, false).accepted;
+                accepted += processTransaction(tx.transaction, true).accepted;
             }
 
             long t2 = System.currentTimeMillis();
@@ -272,7 +283,7 @@ public class PendingManager implements Runnable, BlockchainListener {
     public synchronized void run() {
         Transaction tx;
 
-        while (transactions.size() < TRANSACTIONS_MAX_SIZE && (tx = queue.poll()) != null) {
+        while (txPool.size() < TX_POOL_MAX_SIZE && (tx = queue.poll()) != null) {
 
             // reject already executed transactions
             ByteArray key = ByteArray.of(tx.getHash());
@@ -336,7 +347,7 @@ public class PendingManager implements Runnable, BlockchainListener {
                 // Add the successfully processed transaction into the pool of transactions
                 // which are ready to be proposed to the network.
                 PendingTransaction pendingTransaction = new PendingTransaction(tx, result);
-                transactions.add(pendingTransaction);
+                txPool.add(pendingTransaction);
                 cnt++;
 
                 // relay transaction

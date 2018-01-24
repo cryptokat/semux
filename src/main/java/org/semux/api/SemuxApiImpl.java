@@ -34,7 +34,6 @@ import org.semux.api.response.GetValidatorsResponse;
 import org.semux.api.response.GetVoteResponse;
 import org.semux.api.response.GetVotesResponse;
 import org.semux.api.response.ListAccountsResponse;
-import org.semux.api.response.SendTransactionResponse;
 import org.semux.api.response.Types;
 import org.semux.api.util.TransactionBuilder;
 import org.semux.core.Block;
@@ -106,6 +105,7 @@ public class SemuxApiImpl implements SemuxApi {
 
     /**
      * Whether a value is supplied
+     * 
      * @param value
      * @return
      */
@@ -241,13 +241,18 @@ public class SemuxApiImpl implements SemuxApi {
 
     @Override
     public ApiHandlerResponse sendTransaction(String raw) {
-        if (!isSet(raw)) {
-            return failure("Parameter `raw` is required");
-        }
-
         try {
-            kernel.getPendingManager().addTransaction(Transaction.fromBytes(Hex.decode0x(raw)));
-            return new SendTransactionResponse(true);
+            if (!isSet(raw)) {
+                return failure("Parameter `raw` is required");
+            }
+
+            Transaction tx = Transaction.fromBytes(Hex.decode0x(raw));
+            PendingManager.ProcessTransactionResult result = kernel.getPendingManager().addTransactionSync(tx);
+            if (result.error != null) {
+                return failure("Transaction rejected by pending manager: " + result.error.toString());
+            }
+
+            return new DoTransactionResponse(true, null, Hex.encode0x(tx.getHash()));
         } catch (CryptoException e) {
             return failure("Parameter `raw` is not a valid hexadecimal string");
         }
