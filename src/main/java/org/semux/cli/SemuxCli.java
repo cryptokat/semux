@@ -9,6 +9,7 @@ package org.semux.cli;
 import java.io.File;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -24,6 +25,8 @@ import org.semux.crypto.Hex;
 import org.semux.crypto.Key;
 import org.semux.exception.LauncherException;
 import org.semux.message.CliMessages;
+import org.semux.util.DeadlockConsoleHandler;
+import org.semux.util.DeadlockDetector;
 import org.semux.util.SystemUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,9 @@ public class SemuxCli extends Launcher {
     public static void main(String[] args) {
         try {
             checkPrerequisite();
+
+            DeadlockDetector deadlockDetector = new DeadlockDetector(new DeadlockConsoleHandler(), 5, TimeUnit.SECONDS);
+            deadlockDetector.start();
 
             SemuxCli cli = new SemuxCli();
             // set up logger
