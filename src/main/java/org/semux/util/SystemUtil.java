@@ -104,7 +104,28 @@ public class SystemUtil {
      * @return an IP address if available, otherwise local address
      */
     public static String getIp() {
-        // [1] fetch IP address from OpenDNS. This works for socks5 proxy users.
+        // [1] fetch IP address from Amazon AWS. This works for public Wi-Fi users.
+        try {
+            URL url = new URL("http://checkip.amazonaws.com/");
+            URLConnection con = url.openConnection();
+            con.addRequestProperty("User-Agent", Constants.DEFAULT_USER_AGENT);
+            con.setConnectTimeout(Constants.DEFAULT_CONNECT_TIMEOUT);
+            con.setReadTimeout(Constants.DEFAULT_READ_TIMEOUT);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String ip = reader.readLine().trim();
+            reader.close();
+
+            // only IPv4 is supported currently
+            if (ip.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
+                return ip;
+            }
+        } catch (IOException e) {
+            // do nothing
+        }
+        logger.error("Failed to retrieve your IP address from Amazon AWS");
+
+        // [2] fetch IP address from OpenDNS. This works for socks5 proxy users.
         NioEventLoopGroup ev = new NioEventLoopGroup(1);
         try {
             DnsNameResolver nameResolver = new DnsNameResolverBuilder(ev.next())
@@ -125,27 +146,6 @@ public class SystemUtil {
             ev.shutdownGracefully();
         }
         logger.error("Failed to retrieve your IP address from OpenDNS");
-
-        // [2] fetch IP address from Amazon AWS. This works for public Wi-Fi users.
-        try {
-            URL url = new URL("http://checkip.amazonaws.com/");
-            URLConnection con = url.openConnection();
-            con.addRequestProperty("User-Agent", Constants.DEFAULT_USER_AGENT);
-            con.setConnectTimeout(Constants.DEFAULT_CONNECT_TIMEOUT);
-            con.setReadTimeout(Constants.DEFAULT_READ_TIMEOUT);
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String ip = reader.readLine().trim();
-            reader.close();
-
-            // only IPv4 is supported currently
-            if (ip.matches("(\\d{1,3}\\.){3}\\d{1,3}")) {
-                return ip;
-            }
-        } catch (IOException e) {
-            // do nothing
-        }
-        logger.error("Failed to retrieve your IP address from Amazon AWS");
 
         // [3] Use local address as failover
         try {
