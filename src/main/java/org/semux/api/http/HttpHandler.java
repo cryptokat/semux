@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -59,7 +60,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
 
     private static final int MAX_BODY_SIZE = 512 * 1024; // 512KB
     private static final Charset CHARSET = CharsetUtil.UTF_8;
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
     private Config config;
     private ApiHandler apiHandler;
@@ -76,7 +77,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
     public HttpHandler(Config config, ApiHandler apiHandler) {
         this.config = config;
         this.apiHandler = apiHandler;
-        this.objectMapper.configure(WRITE_NUMBERS_AS_STRINGS, config.apiReturnNumbersAsStrings());
     }
 
     @Override
@@ -170,16 +170,31 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
                     response = apiHandler.service(uri, map, headers);
                     status = HttpResponseStatus.OK;
                 }
-                boolean prettyPrint = Boolean.valueOf(map.get("pretty"));
 
                 // write response
                 String responseString;
                 try {
-                    if (prettyPrint) {
-                        responseString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response);
+                    ObjectWriter writer = objectMapper.writer();
+
+                    if (config.apiReturnNumbersAsStrings()) {
+                        writer = writer.with(WRITE_NUMBERS_AS_STRINGS);
                     } else {
-                        responseString = objectMapper.writeValueAsString(response);
+                        writer = writer.without(WRITE_NUMBERS_AS_STRINGS);
                     }
+
+                    if (map.containsKey("returnNumbersAsStrings")) {
+                        if (Boolean.parseBoolean(map.get("returnNumbersAsStrings"))) {
+                            writer = writer.with(WRITE_NUMBERS_AS_STRINGS);
+                        } else {
+                            writer = writer.without(WRITE_NUMBERS_AS_STRINGS);
+                        }
+                    }
+
+                    if (Boolean.parseBoolean(map.get("pretty"))) {
+                        writer = writer.withDefaultPrettyPrinter();
+                    }
+
+                    responseString = writer.writeValueAsString(response);
                 } catch (JsonProcessingException e) {
                     responseString = "{\"success\":false,\"message\":\"Internal server error\"}";
                 }

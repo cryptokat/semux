@@ -140,11 +140,22 @@ public class HttpHandlerTest {
             @Override
             HttpHandler initHandler() {
                 when(kernel.getConfig().apiReturnNumbersAsStrings()).thenReturn(true);
-                return new HttpHandler(kernel.getConfig(), (u, p, h) -> new TestResponse(true, new TestType((byte) 1, (short) 2, 3, 4L)));
+                return new HttpHandler(kernel.getConfig(),
+                        (u, p, h) -> new TestResponse(true, new TestType((byte) 1, (short) 2, 3, 4L)));
             }
         });
 
-        assertEquals("{\"success\":true,\"result\":{\"aByte\":\"1\",\"aShort\":\"2\",\"aInteger\":\"3\",\"aLong\":\"4\"}}", get(new URL("http://" + ip + ":" + port + "/test")));
+        assertEquals(
+                "{\"success\":true,\"result\":{\"aByte\":\"1\",\"aShort\":\"2\",\"aInteger\":\"3\",\"aLong\":\"4\"}}",
+                get(new URL("http://" + ip + ":" + port + "/test")));
+        assertEquals(
+                "{\"success\":true,\"result\":{\"aByte\":\"1\",\"aShort\":\"2\",\"aInteger\":\"3\",\"aLong\":\"4\"}}",
+                get(new URL("http://" + ip + ":" + port + "/test?returnNumbersAsStrings=true")));
+
+        // get parameter returnNumbersAsStrings=false should be considered over
+        // api.returnNumbersAsStrings=true
+        assertEquals("{\"success\":true,\"result\":{\"aByte\":1,\"aShort\":2,\"aInteger\":3,\"aLong\":4}}",
+                get(new URL("http://" + ip + ":" + port + "/test?returnNumbersAsStrings=false")));
     }
 
     @Test
@@ -153,11 +164,21 @@ public class HttpHandlerTest {
             @Override
             HttpHandler initHandler() {
                 when(kernel.getConfig().apiReturnNumbersAsStrings()).thenReturn(false);
-                return new HttpHandler(kernel.getConfig(), (u, p, h) -> new TestResponse(true, new TestType((byte) 1, (short) 2, 3, 4L)));
+                return new HttpHandler(kernel.getConfig(),
+                        (u, p, h) -> new TestResponse(true, new TestType((byte) 1, (short) 2, 3, 4L)));
             }
         });
 
-        assertEquals("{\"success\":true,\"result\":{\"aByte\":1,\"aShort\":2,\"aInteger\":3,\"aLong\":4}}", get(new URL("http://" + ip + ":" + port + "/test")));
+        assertEquals("{\"success\":true,\"result\":{\"aByte\":1,\"aShort\":2,\"aInteger\":3,\"aLong\":4}}",
+                get(new URL("http://" + ip + ":" + port + "/test")));
+        assertEquals("{\"success\":true,\"result\":{\"aByte\":1,\"aShort\":2,\"aInteger\":3,\"aLong\":4}}",
+                get(new URL("http://" + ip + ":" + port + "/test?returnNumbersAsStrings=false")));
+
+        // get parameter returnNumbersAsStrings=true should be considered over
+        // api.returnNumbersAsStrings=false
+        assertEquals(
+                "{\"success\":true,\"result\":{\"aByte\":\"1\",\"aShort\":\"2\",\"aInteger\":\"3\",\"aLong\":\"4\"}}",
+                get(new URL("http://" + ip + ":" + port + "/test?returnNumbersAsStrings=true")));
     }
 
     private String get(URL url) throws IOException {
@@ -194,7 +215,8 @@ public class HttpHandlerTest {
         @JsonProperty("aLong")
         public final Long aLong;
 
-        public TestType(@JsonProperty("aByte") Byte aByte, @JsonProperty("aShort") Short aShort, @JsonProperty("aInteger") Integer aInteger, @JsonProperty("aLong") Long aLong) {
+        public TestType(@JsonProperty("aByte") Byte aByte, @JsonProperty("aShort") Short aShort,
+                @JsonProperty("aInteger") Integer aInteger, @JsonProperty("aLong") Long aLong) {
             this.aByte = aByte;
             this.aShort = aShort;
             this.aInteger = aInteger;
