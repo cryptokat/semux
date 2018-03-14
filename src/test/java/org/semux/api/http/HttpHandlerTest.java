@@ -8,6 +8,7 @@ package org.semux.api.http;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -23,6 +24,8 @@ import org.semux.KernelMock;
 import org.semux.api.ApiHandlerResponse;
 import org.semux.rules.KernelRule;
 import org.semux.util.BasicAuth;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.netty.handler.codec.http.HttpHeaders;
 
@@ -129,5 +132,73 @@ public class HttpHandlerTest {
         assertEquals("b", params.get("a"));
         assertEquals("f", params.get("e"));
         assertEquals("d", headers.get("c"));
+    }
+
+    @Test
+    public void testReturnNumbersAsStringsTrue() throws IOException {
+        startServer(new HttpChannelInitializer() {
+            @Override
+            HttpHandler initHandler() {
+                when(kernel.getConfig().apiReturnNumbersAsStrings()).thenReturn(true);
+                return new HttpHandler(kernel.getConfig(), (u, p, h) -> new TestResponse(true, new TestType((byte) 1, (short) 2, 3, 4L)));
+            }
+        });
+
+        assertEquals("{\"success\":true,\"result\":{\"aByte\":\"1\",\"aShort\":\"2\",\"aInteger\":\"3\",\"aLong\":\"4\"}}", get(new URL("http://" + ip + ":" + port + "/test")));
+    }
+
+    @Test
+    public void testReturnNumbersAsStringsFalse() throws IOException {
+        startServer(new HttpChannelInitializer() {
+            @Override
+            HttpHandler initHandler() {
+                when(kernel.getConfig().apiReturnNumbersAsStrings()).thenReturn(false);
+                return new HttpHandler(kernel.getConfig(), (u, p, h) -> new TestResponse(true, new TestType((byte) 1, (short) 2, 3, 4L)));
+            }
+        });
+
+        assertEquals("{\"success\":true,\"result\":{\"aByte\":1,\"aShort\":2,\"aInteger\":3,\"aLong\":4}}", get(new URL("http://" + ip + ":" + port + "/test")));
+    }
+
+    private String get(URL url) throws IOException {
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestProperty("Authorization", auth);
+        String response = "";
+        Scanner s = new Scanner(con.getInputStream());
+        response += s.nextLine();
+        s.close();
+        return response;
+    }
+
+    private static class TestResponse extends ApiHandlerResponse {
+
+        @JsonProperty("result")
+        TestType result;
+
+        public TestResponse(@JsonProperty("success") Boolean success, @JsonProperty("result") TestType result) {
+            super(success, null);
+            this.result = result;
+        }
+    }
+
+    private static class TestType {
+        @JsonProperty("aByte")
+        public final Byte aByte;
+
+        @JsonProperty("aShort")
+        public final Short aShort;
+
+        @JsonProperty("aInteger")
+        public final Integer aInteger;
+
+        @JsonProperty("aLong")
+        public final Long aLong;
+
+        public TestType(@JsonProperty("aByte") Byte aByte, @JsonProperty("aShort") Short aShort, @JsonProperty("aInteger") Integer aInteger, @JsonProperty("aLong") Long aLong) {
+            this.aByte = aByte;
+            this.aShort = aShort;
+            this.aInteger = aInteger;
+            this.aLong = aLong;
+        }
     }
 }
