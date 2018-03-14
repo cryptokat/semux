@@ -85,6 +85,11 @@ public class SemuxApiService {
 
             logger.info("Starting API server: address = {}:{}", ip, port);
             channel = b.bind(ip, port).sync().channel();
+
+            if (!kernel.getConfig().apiReturnNumbersAsStrings()) {
+                logger.warn(
+                        "Plain 64-bit numbers in JSON objects can be wrongly deserialized by JavaScript clients. Consider enabling 'api.returnNumbersAsStrings' to avoid this issue. See https://github.com/semuxproject/semux/issues/729");
+            }
         } catch (Exception e) {
             logger.error("Failed to start API server", e);
         }

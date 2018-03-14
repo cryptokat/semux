@@ -6,6 +6,7 @@
  */
 package org.semux.api.http;
 
+import static com.fasterxml.jackson.core.JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.CONTINUE;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -58,7 +59,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
 
     private static final int MAX_BODY_SIZE = 512 * 1024; // 512KB
     private static final Charset CHARSET = CharsetUtil.UTF_8;
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     private Config config;
     private ApiHandler apiHandler;
@@ -75,6 +76,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
     public HttpHandler(Config config, ApiHandler apiHandler) {
         this.config = config;
         this.apiHandler = apiHandler;
+        this.objectMapper.configure(WRITE_NUMBERS_AS_STRINGS, config.apiReturnNumbersAsStrings());
     }
 
     @Override

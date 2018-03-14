@@ -88,6 +88,7 @@ public abstract class AbstractConfig implements Config {
     protected int apiListenPort = Constants.DEFAULT_API_PORT;
     protected String apiUsername = null;
     protected String apiPassword = null;
+    protected boolean apiReturnNumbersAsStrings = false; // default to false to avoid breaking existing clients
 
     // =========================
     // BFT consensus
@@ -347,6 +348,11 @@ public abstract class AbstractConfig implements Config {
     }
 
     @Override
+    public boolean apiReturnNumbersAsStrings() {
+        return apiReturnNumbersAsStrings;
+    }
+
+    @Override
     public long bftNewHeightTimeout() {
         return bftNewHeightTimeout;
     }
@@ -489,6 +495,9 @@ public abstract class AbstractConfig implements Config {
                     break;
                 case "api.password":
                     apiPassword = props.getProperty(name).trim();
+                    break;
+                case "api.returnNumbersAsStrings":
+                    apiReturnNumbersAsStrings = Boolean.parseBoolean(props.getProperty(name).trim());
                     break;
                 case "ui.locale": {
                     // ui.locale must be in format of en_US ([language]_[country])

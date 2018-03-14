@@ -302,6 +302,13 @@ public interface Config {
      */
     String apiPassword();
 
+    /**
+     * Returns whether to return numbers as strings.
+     *
+     * @return
+     */
+    boolean apiReturnNumbersAsStrings();
+
     // =========================
     // BFT consensus
     // =========================
