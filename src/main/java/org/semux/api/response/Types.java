@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.semux.Kernel;
+import org.semux.api.v1_0_1.BlockType;
+import org.semux.api.v1_0_1.TransactionType;
 import org.semux.core.Block;
 import org.semux.core.BlockchainImpl;
 import org.semux.core.Transaction;
@@ -56,87 +58,22 @@ public class Types {
         }
     }
 
-    public static class BlockType {
-
-        @JsonProperty("hash")
-        public final String hash;
-
-        @JsonProperty("number")
-        public final Long number;
-
-        @JsonProperty("view")
-        public final Integer view;
-
-        @JsonProperty("coinbase")
-        public final String coinbase;
-
-        @JsonProperty("parentHash")
-        public final String parentHash;
-
-        @JsonProperty("timestamp")
-        public final Long timestamp;
-
-        @JsonProperty("date")
-        public final String date;
-
-        @JsonProperty("transactionsRoot")
-        public final String transactionsRoot;
-
-        @JsonProperty("resultsRoot")
-        public final String resultsRoot;
-
-        @JsonProperty("stateRoot")
-        public final String stateRoot;
-
-        @JsonProperty("data")
-        public final String data;
-
-        @JsonProperty("transactions")
-        public final List<Types.TransactionType> transactions;
-
-        public BlockType(
-                @JsonProperty("hash") String hash,
-                @JsonProperty("number") Long number,
-                @JsonProperty("view") Integer view,
-                @JsonProperty("coinbase") String coinbase,
-                @JsonProperty("parentHash") String parentHash,
-                @JsonProperty("timestamp") Long timestamp,
-                @JsonProperty("date") String date,
-                @JsonProperty("transactionsRoot") String transactionsRoot,
-                @JsonProperty("resultsRoot") String resultsRoot,
-                @JsonProperty("stateRoot") String stateRoot,
-                @JsonProperty("data") String data,
-                @JsonProperty("transactions") List<Types.TransactionType> transactions) {
-            this.hash = hash;
-            this.number = number;
-            this.view = view;
-            this.coinbase = coinbase;
-            this.parentHash = parentHash;
-            this.timestamp = timestamp;
-            this.date = date;
-            this.transactionsRoot = transactionsRoot;
-            this.resultsRoot = resultsRoot;
-            this.stateRoot = stateRoot;
-            this.data = data;
-            this.transactions = transactions;
-        }
-
-        public BlockType(Block block) {
-            this(Hex.encode0x(block.getHash()),
-                    block.getNumber(),
-                    block.getView(),
-                    Hex.encode0x(block.getCoinbase()),
-                    Hex.encode0x(block.getParentHash()),
-                    block.getTimestamp(),
-                    TimeUtil.formatTimestamp(block.getTimestamp()),
-                    Hex.encode0x(block.getTransactionsRoot()),
-                    Hex.encode0x(block.getResultsRoot()),
-                    Hex.encode0x(block.getStateRoot()),
-                    Hex.encode0x(block.getData()),
-                    block.getTransactions().stream()
-                            .map(tx -> new Types.TransactionType(block.getNumber(), tx))
-                            .collect(Collectors.toList()));
-        }
+    public static BlockType blockType(Block block) {
+        return new BlockType()
+                .hash(Hex.encode0x(block.getHash()))
+                .number(block.getNumber())
+                .view(block.getView())
+                .coinbase(Hex.encode0x(block.getCoinbase()))
+                .parentHash(Hex.encode0x(block.getParentHash()))
+                .timestamp(block.getTimestamp())
+                .date(TimeUtil.formatTimestamp(block.getTimestamp()))
+                .transactionsRoot(Hex.encode0x(block.getTransactionsRoot()))
+                .resultsRoot(Hex.encode0x(block.getResultsRoot()))
+                .stateRoot(Hex.encode0x(block.getStateRoot()))
+                .data(Hex.encode0x(block.getData()))
+                .transactions(block.getTransactions().stream()
+                        .map(tx -> transactionType(block.getNumber(), tx))
+                        .collect(Collectors.toList()));
     }
 
     public static class DelegateType {
@@ -314,73 +251,17 @@ public class Types {
         }
     }
 
-    public static class TransactionType {
-
-        @JsonProperty("blockNumber")
-        public final Long blockNumber;
-
-        @JsonProperty("hash")
-        public final String hash;
-
-        @JsonProperty("type")
-        public final String type;
-
-        @JsonProperty("from")
-        public final String from;
-
-        @JsonProperty("to")
-        public final String to;
-
-        @JsonProperty("value")
-        public final Long value;
-
-        @JsonProperty("fee")
-        public final Long fee;
-
-        @JsonProperty("nonce")
-        public final Long nonce;
-
-        @JsonProperty("timestamp")
-        public final Long timestamp;
-
-        @JsonProperty("data")
-        public final String data;
-
-        public TransactionType(
-                @JsonProperty("blockNumber") Long blockNumber,
-                @JsonProperty("hash") String hash,
-                @JsonProperty("type") String type,
-                @JsonProperty("from") String from,
-                @JsonProperty("to") String to,
-                @JsonProperty("value") Long value,
-                @JsonProperty("fee") Long fee,
-                @JsonProperty("nonce") Long nonce,
-                @JsonProperty("timestamp") Long timestamp,
-                @JsonProperty("data") String data) {
-            this.blockNumber = blockNumber;
-            this.hash = hash;
-            this.type = type;
-            this.from = from;
-            this.to = to;
-            this.value = value;
-            this.fee = fee;
-            this.nonce = nonce;
-            this.timestamp = timestamp;
-            this.data = data;
-        }
-
-        public TransactionType(Long blockNumber, Transaction tx) {
-            this(blockNumber,
-                    Hex.encode0x(tx.getHash()),
-                    tx.getType().toString(),
-                    Hex.encode0x(tx.getFrom()),
-                    Hex.encode0x(tx.getTo()),
-                    tx.getValue(),
-                    tx.getFee(),
-                    tx.getNonce(),
-                    tx.getTimestamp(),
-                    Hex.encode0x(tx.getData()));
-        }
+    public static TransactionType transactionType(Long blockNumber, Transaction tx) {
+        return new TransactionType()
+                .blockNumber(blockNumber)
+                .hash(Hex.encode0x(tx.getHash()))
+                .from(Hex.encode0x(tx.getFrom()))
+                .to(Hex.encode0x(tx.getTo()))
+                .value(tx.getValue())
+                .fee(tx.getFee())
+                .nonce(tx.getNonce())
+                .timestamp(tx.getTimestamp())
+                .data(Hex.encode0x(tx.getData()));
     }
 
 }

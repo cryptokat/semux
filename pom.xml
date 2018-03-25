@@ -66,6 +66,7 @@
             </plugin>
 
             <!-- build swagger document -->
+            <!--
             <plugin>
                 <groupId>com.github.kongchen</groupId>
                 <artifactId>swagger-maven-plugin</artifactId>
@@ -117,6 +118,56 @@
                         <version>2.3.0</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            -->
+
+            <plugin>
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-codegen-maven-plugin</artifactId>
+                <version>2.3.1</version>
+                <executions>
+                    <!-- v1.0.1 -->
+                    <execution>
+                        <id>swagger-codegen-1_0_1</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/org/semux/api/v1_0_1/swagger.json</inputSpec>
+                            <language>jaxrs-spec</language>
+                            <generateModels>true</generateModels>
+                            <generateModelTests>false</generateModelTests>
+                            <generateApis>false</generateApis>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <addCompileSourceRoot>true</addCompileSourceRoot>
+
+                            <output>${project.basedir}</output>
+                            <modelPackage>org.semux.api.v1_0_1</modelPackage>
+                        </configuration>
+                    </execution>
+
+                    <!-- v1.0.2 -->
+                    <execution>
+                        <id>swagger-codegen-1_0_2</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/org/semux/api/v1_0_2/swagger.json</inputSpec>
+                            <language>jaxrs-spec</language>
+                            <generateModels>true</generateModels>
+                            <generateModelTests>false</generateModelTests>
+                            <generateApis>false</generateApis>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <addCompileSourceRoot>true</addCompileSourceRoot>
+
+                            <output>${project.basedir}</output>
+                            <modelPackage>org.semux.api.v1_0_2</modelPackage>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- build fat jar -->
@@ -400,8 +451,8 @@
                     <header>misc/license_header.txt</header>
                     <encoding>UTF-8</encoding>
                     <includes>
-                        <include>src/**/*.java</include>
-                        <include>test/**/*.java</include>
+                        <include>${project.build.sourceDirectory}/**/*.java</include>
+                        <include>${project.build.testSourceDirectory}/**/*.java</include>
                     </includes>
                 </configuration>
             </plugin>
@@ -732,6 +783,12 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.9.4</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+            <version>1.1.0.Final</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- ED25519 -->

@@ -7,8 +7,8 @@
 package org.semux.api;
 
 import org.semux.Kernel;
-import org.semux.api.response.GetBlockResponse;
 import org.semux.api.response.Types;
+import org.semux.api.v1_0_1.GetBlockResponse;
 import org.semux.core.Block;
 
 /**
@@ -43,6 +43,6 @@ public class ConsoleApiImpl implements ConsoleApi {
             return failure("The requested block was not found");
         }
 
-        return new GetBlockResponse(true, new Types.BlockType(block));
+        return new GetBlockResponse().success(true).result(Types.blockType(block));
     }
 }

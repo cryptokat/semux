@@ -71,7 +71,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<Object> {
     private HttpHeaders headers;
     private ByteBuf body;
 
-    private ApiHandlerResponse response = null;
+    private Object response = null;
     private HttpResponseStatus status;
 
     public HttpHandler(Config config, ApiHandler apiHandler) {

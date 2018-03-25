@@ -9,7 +9,7 @@ package org.semux.api;
 import java.util.Map;
 
 import org.semux.Kernel;
-import org.semux.api.response.GetRootResponse;
+import org.semux.api.v1_0_1.GetRootResponse;
 import org.semux.util.exception.UnreachableException;
 
 import io.netty.handler.codec.http.HttpHeaders;
