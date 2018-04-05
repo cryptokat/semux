@@ -6,6 +6,9 @@
  */
 package org.semux.api.http;
 
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static junit.framework.TestCase.assertTrue;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 
@@ -20,7 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.semux.KernelMock;
-import org.semux.api.ApiHandlerResponse;
+import org.semux.api.v1_0_1.ApiHandlerResponse;
 import org.semux.rules.KernelRule;
 import org.semux.util.BasicAuth;
 
@@ -129,5 +132,57 @@ public class HttpHandlerTest {
         assertEquals("b", params.get("a"));
         assertEquals("f", params.get("e"));
         assertEquals("d", headers.get("c"));
+    }
+
+    @Test
+    public void testGetStaticFiles() throws IOException {
+        startServer(null);
+
+        URL url = new URL("http://" + ip + ":" + port + "/v1.1/index.html");
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestProperty("Authorization", auth);
+
+        StringBuilder lines = new StringBuilder();
+        Scanner s = new Scanner(con.getInputStream());
+        while (s.hasNextLine()) {
+            lines.append(s.nextLine());
+        }
+        s.close();
+
+        assertEquals(HTTP_OK, con.getResponseCode());
+        assertEquals("text/html", con.getHeaderField("content-type"));
+        assertTrue(lines.toString().length() > 1);
+    }
+
+    @Test
+    public void testGetStaticFiles404() throws IOException {
+        startServer(null);
+
+        URL url = new URL("http://" + ip + ":" + port + "/v1.1/xx.html");
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestProperty("Authorization", auth);
+
+        assertEquals(HTTP_NOT_FOUND, con.getResponseCode());
+    }
+
+    @Test
+    public void testKeepAlive() throws IOException {
+        startServer(null);
+
+        for (int i = 0; i < 2; i++) {
+            URL url = new URL("http://" + ip + ":" + port + "/");
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setUseCaches(false);
+            con.setRequestMethod("GET");
+            con.setRequestProperty("Connection", "keep-alive");
+            con.setRequestProperty("Authorization", auth);
+
+            Scanner s = new Scanner(con.getInputStream());
+            s.nextLine();
+            s.close();
+
+            assertEquals(HTTP_OK, con.getResponseCode());
+            assertEquals("keep-alive", con.getHeaderField("connection"));
+        }
     }
 }
