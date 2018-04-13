@@ -13,8 +13,14 @@ include_directories(${JNI_INCLUDE_DIRS})
 find_package(sodium REQUIRED)
 include_directories(${sodium_INCLUDE_DIR})
 
+# openssl library
+set(OPENSSL_MSVC_STATIC_RT true)
+set(OPENSSL_USE_STATIC_LIBS true)
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
+
 # source files
-set(SOURCE_FILES org_semux_crypto_Native.cpp ripemd160.c)
+set(SOURCE_FILES org_semux_crypto_Native.cpp)
 
 # build
 add_library(crypto SHARED ${SOURCE_FILES})

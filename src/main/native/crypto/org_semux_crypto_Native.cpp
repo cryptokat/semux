@@ -1,6 +1,6 @@
 #include "org_semux_crypto_Native.h"
-#include "ripemd160.h"
 #include <sodium.h>
+#include <openssl/ripemd.h>
 
 JNIEXPORT jbyteArray JNICALL Java_org_semux_crypto_Native_h256
 (JNIEnv *env, jclass cls, jbyteArray msg)
@@ -48,7 +48,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_semux_crypto_Native_h160
 
     // compute ripemd160 digest
     unsigned char digest[20];
-    ripemd160(hash, sizeof(hash), digest);
+    RIPEMD160(hash, sizeof(hash), digest);
 
     // release buffer
     free(msg_buf);
