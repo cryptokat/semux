@@ -269,16 +269,21 @@ public class BlockchainImplTest {
         assertEquals(0, chain.getValidatorStats(address).getTurnsHit());
         assertEquals(0, chain.getValidatorStats(address).getTurnsMissed());
 
-        chain.adjustValidatorStats(address, StatsType.FORGED, 1);
+        chain.adjustValidatorStats(address, StatsType.FORGED);
         assertEquals(1, chain.getValidatorStats(address).getBlocksForged());
 
-        chain.adjustValidatorStats(address, StatsType.HIT, 1);
+        chain.adjustValidatorStats(address, StatsType.HIT);
         assertEquals(1, chain.getValidatorStats(address).getTurnsHit());
 
-        chain.adjustValidatorStats(address, StatsType.MISSED, 1);
+        chain.adjustValidatorStats(address, StatsType.MISSED);
         assertEquals(1, chain.getValidatorStats(address).getTurnsMissed());
-        chain.adjustValidatorStats(address, StatsType.MISSED, 1);
+        chain.adjustValidatorStats(address, StatsType.MISSED);
         assertEquals(2, chain.getValidatorStats(address).getTurnsMissed());
+    }
+
+    @Test
+    public void testRecentValidatorStats() {
+
     }
 
     @Test

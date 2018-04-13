@@ -30,12 +30,14 @@ import org.semux.core.state.Delegate;
 import org.semux.core.state.DelegateState;
 import org.semux.core.state.DelegateStateImpl;
 import org.semux.crypto.Hex;
+import org.semux.crypto.Key;
 import org.semux.db.Database;
 import org.semux.db.DatabaseFactory;
 import org.semux.db.DatabaseName;
 import org.semux.db.Migration;
 import org.semux.db.TempDatabaseFactory;
 import org.semux.util.Bytes;
+import org.semux.util.ClosableIterator;
 import org.semux.util.FileUtil;
 import org.semux.util.SimpleDecoder;
 import org.semux.util.SimpleEncoder;
@@ -94,6 +96,8 @@ public class BlockchainImpl implements Blockchain {
     protected static final byte TYPE_BLOCK_RESULTS = 0x02;
     protected static final byte TYPE_BLOCK_VOTES = 0x03;
 
+    public static final long VALIDATOR_STATS_HISTORICAL_BLOCKS = Constants.BLOCKS_PER_DAY * 30;
+
     protected enum StatsType {
         FORGED, HIT, MISSED
     }
@@ -102,6 +106,7 @@ public class BlockchainImpl implements Blockchain {
 
     private Database indexDB;
     private Database blockDB;
+    private Database validatorStatsDB;
 
     private AccountState accountState;
     private DelegateState delegateState;
@@ -140,6 +145,7 @@ public class BlockchainImpl implements Blockchain {
     private synchronized void openDb(DatabaseFactory factory) {
         this.indexDB = factory.getDB(DatabaseName.INDEX);
         this.blockDB = factory.getDB(DatabaseName.BLOCK);
+        this.validatorStatsDB = factory.getDB(DatabaseName.VALIDATOR_STATS_HISTORY);
 
         this.accountState = new AccountStateImpl(factory.getDB(DatabaseName.ACCOUNT));
         this.delegateState = new DelegateStateImpl(this, factory.getDB(DatabaseName.DELEGATE),
@@ -401,11 +407,11 @@ public class BlockchainImpl implements Blockchain {
             List<String> validators = getValidators();
             String primary = config.getPrimaryValidator(validators, number, 0,
                     activatedForks.containsKey(UNIFORM_DISTRIBUTION));
-            adjustValidatorStats(block.getCoinbase(), StatsType.FORGED, 1);
+            adjustValidatorStats(block.getCoinbase(), StatsType.FORGED);
             if (primary.equals(Hex.encode(block.getCoinbase()))) {
-                adjustValidatorStats(Hex.decode0x(primary), StatsType.HIT, 1);
+                adjustValidatorStats(Hex.decode0x(primary), StatsType.HIT);
             } else {
-                adjustValidatorStats(Hex.decode0x(primary), StatsType.MISSED, 1);
+                adjustValidatorStats(Hex.decode0x(primary), StatsType.MISSED);
             }
         }
 
@@ -493,6 +499,57 @@ public class BlockchainImpl implements Blockchain {
         return (value == null) ? new ValidatorStats(0, 0, 0) : ValidatorStats.fromBytes(value);
     }
 
+    @Override
+    public ValidatorStats getRecentValidatorStats(byte[] address, final long lookupBlocks) {
+        if (lookupBlocks <= 0 || lookupBlocks > VALIDATOR_STATS_HISTORICAL_BLOCKS) {
+            throw new IllegalArgumentException("lookupBlocks must be between 1 and VALIDATOR_STATS_HISTORICAL_BLOCKS");
+        }
+
+        logger.info("Lookup {}", Hex.encode(address));
+        ClosableIterator<Entry<byte[], byte[]>> it = validatorStatsDB.iterator(address);
+        try {
+            // [1] check if there is any change during VALIDATOR_STATS_HISTORICAL_BLOCKS
+            if (!it.hasNext()) {
+                return new ValidatorStats(0, 0, 0);
+            }
+
+            Entry<byte[], byte[]> mostRecentEntry = it.next();
+            long height = getValidatorStatsHistoryKeyHeight(mostRecentEntry.getKey());
+            if (height < getLatestBlockNumber() - lookupBlocks) {
+                return new ValidatorStats(0, 0, 0);
+            }
+
+            // [2] check if there is a recent stats where height < current height - VALIDATOR_STATS_HISTORICAL_BLOCKS
+            ValidatorStats mostRecentStats = ValidatorStats.fromBytes(mostRecentEntry.getValue());
+            if (!it.hasNext()) {
+                return mostRecentStats;
+            }
+
+            // [3] DP: recent stats = most recent stats - second recent stats
+            while (it.hasNext()) {
+                Entry<byte[], byte[]> recentEntry = it.next();
+
+                if (!Arrays.equals(getValidatorStatsHistoryKeyAddress(recentEntry.getKey()), address)) {
+                    break;
+                }
+
+                long recentEntryHeight = getValidatorStatsHistoryKeyHeight(recentEntry.getKey());
+                if (recentEntryHeight <= getLatestBlockNumber() - lookupBlocks) {
+                    ValidatorStats secondRecentStats = ValidatorStats.fromBytes(recentEntry.getValue());
+                    return new ValidatorStats(
+                            mostRecentStats.blocksForged - secondRecentStats.blocksForged,
+                            mostRecentStats.turnsHit - secondRecentStats.turnsHit,
+                            mostRecentStats.turnsMissed - secondRecentStats.turnsMissed
+                    );
+                }
+            }
+
+            return mostRecentStats;
+        } finally {
+            it.close();
+        }
+    }
+
     /**
      * Updates the validator set.
      * 
@@ -523,10 +580,8 @@ public class BlockchainImpl implements Blockchain {
      *            validator address
      * @param type
      *            stats type
-     * @param delta
-     *            difference
      */
-    protected void adjustValidatorStats(byte[] address, StatsType type, long delta) {
+    protected void adjustValidatorStats(byte[] address, StatsType type) {
         byte[] key = Bytes.merge(TYPE_VALIDATOR_STATS, address);
         byte[] value = indexDB.get(key);
 
@@ -534,19 +589,44 @@ public class BlockchainImpl implements Blockchain {
 
         switch (type) {
         case FORGED:
-            stats.setBlocksForged(stats.getBlocksForged() + delta);
+            stats.setBlocksForged(stats.getBlocksForged() + 1);
             break;
         case HIT:
-            stats.setTurnsHit(stats.getTurnsHit() + delta);
+            stats.setTurnsHit(stats.getTurnsHit() + 1);
             break;
         case MISSED:
-            stats.setTurnsMissed(stats.getTurnsMissed() + delta);
+            stats.setTurnsMissed(stats.getTurnsMissed() + 1);
             break;
         default:
             break;
         }
 
         indexDB.put(key, stats.toBytes());
+        validatorStatsDB.put(getValidatorStatsHistoryKey(address, getLatestBlockNumber()), stats.toBytes());
+    }
+
+    public static byte[] getValidatorStatsHistoryKey(byte[] address, long height) {
+        return Bytes.merge(address, Bytes.of(height));
+    }
+
+    public static byte[] getValidatorStatsHistoryKeyAddress(byte[] key) {
+        byte[] address = new byte[Key.ADDRESS_LEN];
+        if (key.length != Key.ADDRESS_LEN + 8) {
+            throw new BlockchainException("Cannot decode validator stats history key: " + Hex.encode0x(key));
+        }
+
+        System.arraycopy(key, 0, address, 0, Key.ADDRESS_LEN);
+        return address;
+    }
+
+    public static long getValidatorStatsHistoryKeyHeight(byte[] key) {
+        byte[] heightBytes = new byte[8];
+        if (key.length != Key.ADDRESS_LEN + 8) {
+            throw new BlockchainException("Cannot decode validator stats history key: " + Hex.encode0x(key));
+        }
+
+        System.arraycopy(key, Key.ADDRESS_LEN, heightBytes, 0, heightBytes.length);
+        return Bytes.toLong(heightBytes);
     }
 
     /**
@@ -581,6 +661,8 @@ public class BlockchainImpl implements Blockchain {
     protected byte[] getNthTransactionIndexKey(byte[] address, int n) {
         return Bytes.merge(Bytes.of(TYPE_ACCOUNT_TRANSACTION), address, Bytes.of(n));
     }
+
+
 
     @Override
     public Map<ValidatorActivatedFork, ValidatorActivatedFork.Activation> getActivatedForks() {

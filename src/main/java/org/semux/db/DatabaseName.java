@@ -31,5 +31,10 @@ public enum DatabaseName {
     /**
      * Delegate vote data.
      */
-    VOTE
+    VOTE,
+
+    /**
+     * Validator stats history.
+     */
+    VALIDATOR_STATS_HISTORY
 }

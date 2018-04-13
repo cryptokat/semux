@@ -16,6 +16,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.fusesource.leveldbjni.JniDBFactory;
@@ -40,6 +41,10 @@ public class LeveldbDatabase implements Database {
     private boolean isOpened;
 
     public LeveldbDatabase(File file) {
+        this(file, null);
+    }
+
+    public LeveldbDatabase(File file, Function<Options, Options> configurator) {
         this.file = file;
 
         File dir = file.getParentFile();
@@ -47,7 +52,7 @@ public class LeveldbDatabase implements Database {
             logger.error("Failed to create directory: {}", dir);
         }
 
-        open(createOptions());
+        open(createOptions(configurator));
     }
 
     /**
@@ -55,7 +60,7 @@ public class LeveldbDatabase implements Database {
      *
      * @return
      */
-    protected Options createOptions() {
+    protected Options createOptions(Function<Options, Options> configurator) {
         Options options = new Options();
         options.createIfMissing(true);
         options.compressionType(CompressionType.NONE);
@@ -66,7 +71,11 @@ public class LeveldbDatabase implements Database {
         options.verifyChecksums(true);
         options.maxOpenFiles(128);
 
-        return options;
+        return configurator == null ? options : configurator.apply(options);
+    }
+
+    protected Options createOptions() {
+        return createOptions(null);
     }
 
     /**
@@ -229,7 +238,7 @@ public class LeveldbDatabase implements Database {
             if (open.compareAndSet(false, true)) {
                 for (DatabaseName name : DatabaseName.values()) {
                     File file = Paths.get(dataDir.getAbsolutePath(), name.toString().toLowerCase()).toFile();
-                    databases.put(name, new LeveldbDatabase(file));
+                    databases.put(name, new LeveldbDatabase(file, LeveldbConfigurators.getConfigurator(name)));
                 }
             }
         }

@@ -192,6 +192,8 @@ public interface Blockchain {
      */
     ValidatorStats getValidatorStats(byte[] address);
 
+    ValidatorStats getRecentValidatorStats(byte[] address, long lookupBlocks);
+
     /**
      * Get currently activated forks.
      *
