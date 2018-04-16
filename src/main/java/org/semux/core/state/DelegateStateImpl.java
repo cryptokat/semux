@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.semux.core.Amount;
 import org.semux.core.Blockchain;
 import org.semux.db.Database;
@@ -265,9 +266,9 @@ public class DelegateStateImpl implements DelegateState {
         if (prev != null) {
             prev.getDelegates(map);
         } else {
-            ClosableIterator<Entry<byte[], byte[]>> itr = delegateDB.iterator();
+            ClosableIterator<ImmutablePair<byte[], byte[]>> itr = delegateDB.iterator();
             while (itr.hasNext()) {
-                Entry<byte[], byte[]> entry = itr.next();
+                ImmutablePair<byte[], byte[]> entry = itr.next();
                 ByteArray k = ByteArray.of(entry.getKey());
                 byte[] v = entry.getValue();
 
@@ -304,9 +305,9 @@ public class DelegateStateImpl implements DelegateState {
     public Map<ByteArray, Amount> getVotes(byte[] delegate) {
         Map<ByteArray, Amount> result = new HashMap<>();
 
-        ClosableIterator<Entry<byte[], byte[]>> itr = voteDB.iterator(delegate);
+        ClosableIterator<ImmutablePair<byte[], byte[]>> itr = voteDB.iterator(delegate);
         while (itr.hasNext()) {
-            Entry<byte[], byte[]> e = itr.next();
+            ImmutablePair<byte[], byte[]> e = itr.next();
             byte[] d = Arrays.copyOf(e.getKey(), 20);
             byte[] v = Arrays.copyOfRange(e.getKey(), 20, 40);
 

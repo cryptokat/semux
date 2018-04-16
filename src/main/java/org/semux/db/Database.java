@@ -8,8 +8,8 @@ package org.semux.db;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map.Entry;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.semux.util.ClosableIterator;
 
@@ -61,7 +61,7 @@ public interface Database {
      * 
      * @return
      */
-    ClosableIterator<Entry<byte[], byte[]>> iterator();
+    ClosableIterator<ImmutablePair<byte[], byte[]>> iterator();
 
     /**
      * Returns all the keys which has the given prefix.<br>
@@ -70,7 +70,7 @@ public interface Database {
      *
      * @return
      */
-    ClosableIterator<Entry<byte[], byte[]>> iterator(byte[] prefix);
+    ClosableIterator<ImmutablePair<byte[], byte[]>> iterator(byte[] prefix);
 
     /**
      * Closes the database.

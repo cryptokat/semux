@@ -6,37 +6,39 @@
  */
 package org.semux.db;
 
-import static org.fusesource.leveldbjni.JniDBFactory.factory;
-
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.fusesource.leveldbjni.JniDBFactory;
-import org.iq80.leveldb.CompressionType;
-import org.iq80.leveldb.DB;
-import org.iq80.leveldb.DBIterator;
-import org.iq80.leveldb.Options;
-import org.iq80.leveldb.WriteBatch;
-import org.semux.db.exception.DatabaseException;
 import org.semux.util.ClosableIterator;
 import org.semux.util.FileUtil;
 import org.semux.util.SystemUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.protonail.leveldb.jna.KeyValuePair;
+import com.protonail.leveldb.jna.LevelDB;
+import com.protonail.leveldb.jna.LevelDBCompressionType;
+import com.protonail.leveldb.jna.LevelDBException;
+import com.protonail.leveldb.jna.LevelDBKeyValueIterator;
+import com.protonail.leveldb.jna.LevelDBOptions;
+import com.protonail.leveldb.jna.LevelDBReadOptions;
+import com.protonail.leveldb.jna.LevelDBWriteBatch;
+import com.protonail.leveldb.jna.LevelDBWriteOptions;
+
 public class LeveldbDatabase implements Database {
 
     private static final Logger logger = LoggerFactory.getLogger(LeveldbDatabase.class);
 
     private File file;
-    private DB db;
+    private LevelDB db;
     private boolean isOpened;
 
     public LeveldbDatabase(File file) {
@@ -55,16 +57,16 @@ public class LeveldbDatabase implements Database {
      *
      * @return
      */
-    protected Options createOptions() {
-        Options options = new Options();
-        options.createIfMissing(true);
-        options.compressionType(CompressionType.NONE);
-        options.blockSize(4 * 1024 * 1024);
-        options.writeBufferSize(8 * 1024 * 1024);
-        options.cacheSize(64L * 1024L * 1024L);
-        options.paranoidChecks(true);
-        options.verifyChecksums(true);
-        options.maxOpenFiles(128);
+    protected LevelDBOptions createOptions() {
+        LevelDBOptions options = new LevelDBOptions();
+        options.setCreateIfMissing(true);
+        options.setCompressionType(LevelDBCompressionType.NoCompression);
+        options.setBlockSize(4 * 1024 * 1024);
+        options.setWriteBufferSize(8 * 1024 * 1024);
+        // options.cacheSize(64L * 1024L * 1024L);
+        options.setParanoidChecks(true);
+        // options.verifyChecksums(true);
+        options.setMaxOpenFiles(128);
 
         return options;
     }
@@ -74,9 +76,9 @@ public class LeveldbDatabase implements Database {
      * 
      * @param options
      */
-    protected void open(Options options) {
+    protected void open(LevelDBOptions options) {
         try {
-            db = JniDBFactory.factory.open(file, options);
+            db = new LevelDB(file.getCanonicalPath(), options);
             isOpened = true;
         } catch (IOException e) {
             if (e.getMessage().contains("Corruption")) {
@@ -85,7 +87,7 @@ public class LeveldbDatabase implements Database {
 
                 // reopen
                 try {
-                    db = JniDBFactory.factory.open(file, options);
+                    db = new LevelDB(file.getCanonicalPath(), options);
                     isOpened = true;
                 } catch (IOException ex) {
                     logger.error("Failed to open database", e);
@@ -103,10 +105,10 @@ public class LeveldbDatabase implements Database {
      *
      * @param options
      */
-    protected void recover(Options options) {
+    protected void recover(LevelDBOptions options) {
         try {
             logger.info("Database is corrupted, trying to repair...");
-            factory.repair(file, options);
+            LevelDB.repair(file.getCanonicalPath(), options);
             logger.info("Repair done!");
         } catch (IOException ex) {
             logger.error("Failed to repair the database", ex);
@@ -116,31 +118,39 @@ public class LeveldbDatabase implements Database {
 
     @Override
     public byte[] get(byte[] key) {
-        return db.get(key);
+        try (LevelDBReadOptions options = new LevelDBReadOptions()) {
+            return db.get(key, options);
+        }
     }
 
     @Override
     public void put(byte[] key, byte[] value) {
-        db.put(key, value);
+        try (LevelDBWriteOptions options = new LevelDBWriteOptions()) {
+            db.put(key, value, options);
+        }
     }
 
     @Override
     public void delete(byte[] key) {
-        db.delete(key);
+        try (LevelDBWriteOptions options = new LevelDBWriteOptions()) {
+            db.delete(key, options);
+        }
     }
 
     @Override
     public void updateBatch(List<Pair<byte[], byte[]>> pairs) {
-        try (WriteBatch batch = db.createWriteBatch()) {
-            for (Pair<byte[], byte[]> p : pairs) {
-                if (p.getValue() == null) {
-                    batch.delete(p.getLeft());
-                } else {
-                    batch.put(p.getLeft(), p.getRight());
+        try (LevelDBWriteOptions options = new LevelDBWriteOptions()) {
+            try (LevelDBWriteBatch batch = new LevelDBWriteBatch()) {
+                for (Pair<byte[], byte[]> p : pairs) {
+                    if (p.getValue() == null) {
+                        batch.delete(p.getLeft());
+                    } else {
+                        batch.put(p.getLeft(), p.getRight());
+                    }
                 }
+                db.write(batch, options);
             }
-            db.write(batch);
-        } catch (IOException e) {
+        } catch (LevelDBException e) {
             logger.error("Failed to update batch", e);
             SystemUtil.exitAsync(SystemUtil.Code.FAILED_TO_WRITE_BATCH_TO_DB);
         }
@@ -148,13 +158,9 @@ public class LeveldbDatabase implements Database {
 
     @Override
     public void close() {
-        try {
-            if (isOpened) {
-                db.close();
-                isOpened = false;
-            }
-        } catch (IOException e) {
-            logger.error("Failed to close database: {}", file, e);
+        if (isOpened) {
+            db.close();
+            isOpened = false;
         }
     }
 
@@ -170,21 +176,24 @@ public class LeveldbDatabase implements Database {
     }
 
     @Override
-    public ClosableIterator<Entry<byte[], byte[]>> iterator() {
+    public ClosableIterator<ImmutablePair<byte[], byte[]>> iterator() {
         return iterator(null);
     }
 
     @Override
-    public ClosableIterator<Entry<byte[], byte[]>> iterator(byte[] prefix) {
+    public ClosableIterator<ImmutablePair<byte[], byte[]>> iterator(byte[] prefix) {
 
-        return new ClosableIterator<Entry<byte[], byte[]>>() {
-            DBIterator itr = db.iterator();
+        return new ClosableIterator<ImmutablePair<byte[], byte[]>>() {
+            LevelDBKeyValueIterator itr;
 
-            private ClosableIterator<Entry<byte[], byte[]>> initialize() {
-                if (prefix != null) {
-                    itr.seek(prefix);
-                } else {
-                    itr.seekToFirst();
+            private ClosableIterator<ImmutablePair<byte[], byte[]>> initialize() {
+                try (LevelDBReadOptions options = new LevelDBReadOptions()) {
+                    itr = new LevelDBKeyValueIterator(db, options);
+                    if (prefix != null) {
+                        itr.seekToKey(prefix);
+                    } else {
+                        itr.seekToFirst();
+                    }
                 }
                 return this;
             }
@@ -195,17 +204,14 @@ public class LeveldbDatabase implements Database {
             }
 
             @Override
-            public Entry<byte[], byte[]> next() {
-                return itr.next();
+            public ImmutablePair<byte[], byte[]> next() {
+                KeyValuePair kv = itr.next();
+                return ImmutablePair.of(kv.getKey(), kv.getValue());
             }
 
             @Override
             public void close() {
-                try {
-                    itr.close();
-                } catch (IOException e) {
-                    throw new DatabaseException(e);
-                }
+                itr.close();
             }
         }.initialize();
     }
@@ -228,8 +234,13 @@ public class LeveldbDatabase implements Database {
         public void open() {
             if (open.compareAndSet(false, true)) {
                 for (DatabaseName name : DatabaseName.values()) {
-                    File file = Paths.get(dataDir.getAbsolutePath(), name.toString().toLowerCase()).toFile();
-                    databases.put(name, new LeveldbDatabase(file));
+                    try {
+                        File file = Paths.get(dataDir.getAbsolutePath(), name.toString().toLowerCase()).normalize().toFile();
+                        Files.createDirectories(file.toPath());
+                        databases.put(name, new LeveldbDatabase(file.getCanonicalFile()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

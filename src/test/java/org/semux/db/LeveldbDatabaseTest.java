@@ -16,11 +16,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map.Entry;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.iq80.leveldb.DBException;
-import org.iq80.leveldb.Options;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +26,9 @@ import org.semux.config.Constants;
 import org.semux.db.LeveldbDatabase.LevelDbFactory;
 import org.semux.util.Bytes;
 import org.semux.util.ClosableIterator;
+
+import com.protonail.leveldb.jna.LevelDBException;
+import com.protonail.leveldb.jna.LevelDBOptions;
 
 public class LeveldbDatabaseTest {
 
@@ -50,7 +51,7 @@ public class LeveldbDatabaseTest {
     @Test
     public void testRecover() {
         db.close();
-        Options options = db.createOptions();
+        LevelDBOptions options = db.createOptions();
         db.recover(options);
     }
 
@@ -87,7 +88,7 @@ public class LeveldbDatabaseTest {
         db.put(Bytes.of("b"), Bytes.of("2"));
         db.put(Bytes.of("c"), Bytes.of("3"));
 
-        ClosableIterator<Entry<byte[], byte[]>> itr = db.iterator(Bytes.of("a1"));
+        ClosableIterator<ImmutablePair<byte[], byte[]>> itr = db.iterator(Bytes.of("a1"));
         assertTrue(itr.hasNext());
         assertArrayEquals(Bytes.of("b"), itr.next().getKey());
         assertTrue(itr.hasNext());
@@ -104,7 +105,7 @@ public class LeveldbDatabaseTest {
         factory.close();
     }
 
-    @Test(expected = DBException.class)
+    @Test(expected = LevelDBException.class)
     public void testClose() {
         db.close();
 
