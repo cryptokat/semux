@@ -10,6 +10,8 @@ public enum DatabaseName {
 
     /**
      * Block and transaction index.
+     * 
+     * @deprecated merged into ${@link this#BLOCK} since db version 2
      */
     INDEX,
 
@@ -20,16 +22,22 @@ public enum DatabaseName {
 
     /**
      * Account related data.
+     * 
+     * @deprecated merged into ${@link this#BLOCK} since db version 2
      */
     ACCOUNT,
 
     /**
      * Delegate core data.
+     * 
+     * @deprecated merged into ${@link this#BLOCK} since db version 2
      */
     DELEGATE,
 
     /**
      * Delegate vote data.
+     * 
+     * @deprecated merged into ${@link this#BLOCK} since db version 2
      */
     VOTE
 }
