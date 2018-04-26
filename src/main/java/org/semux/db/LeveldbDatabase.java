@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -130,7 +129,7 @@ public class LeveldbDatabase implements Database {
     }
 
     @Override
-    public void updateBatch(List<Pair<byte[], byte[]>> pairs) {
+    public void updateBatch(Iterable<Pair<byte[], byte[]>> pairs) {
         try (WriteBatch batch = db.createWriteBatch()) {
             for (Pair<byte[], byte[]> p : pairs) {
                 if (p.getValue() == null) {

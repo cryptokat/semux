@@ -7,7 +7,6 @@
 package org.semux.db;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -52,7 +51,7 @@ public interface Database {
      * @param pairs
      *            key value pairs; pair with null value, will be deleted
      */
-    void updateBatch(List<Pair<byte[], byte[]>> pairs);
+    void updateBatch(Iterable<Pair<byte[], byte[]>> pairs);
 
     /**
      * Returns all the keys.<br>

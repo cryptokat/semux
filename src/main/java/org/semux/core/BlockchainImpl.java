@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,6 +32,7 @@ import org.semux.core.state.DelegateState;
 import org.semux.core.state.DelegateStateImpl;
 import org.semux.crypto.Hex;
 import org.semux.db.Database;
+import org.semux.db.DatabaseBatch;
 import org.semux.db.DatabaseFactory;
 import org.semux.db.DatabaseName;
 import org.semux.db.LeveldbDatabase;
@@ -118,7 +118,11 @@ public class BlockchainImpl implements Blockchain {
 
     private final Config config;
 
+    /**
+     * @deprecated v1-only, use blockDB instead since v2
+     */
     private Database indexDB;
+
     private Database blockDB;
 
     private AccountState accountState;
@@ -908,33 +912,32 @@ public class BlockchainImpl implements Blockchain {
             Database indexDb = dbFactory.getDB(DatabaseName.INDEX);
 
             // prepare batch
-            List<Pair<byte[], byte[]>> blockDbBatch = new LinkedList<>();
+            DatabaseBatch batch = DatabaseBatch.getBatch(blockDb);
 
             // merge indexDB into blockDB
-            blockDbBatch.add(ImmutablePair.of(Bytes.of(TYPE_LATEST_BLOCK_NUMBER),
-                    indexDb.get(Bytes.of(V1_TYPE_LATEST_BLOCK_NUMBER))));
-            blockDbBatch.add(ImmutablePair.of(Bytes.of(TYPE_VALIDATORS), indexDb.get(Bytes.of(V1_TYPE_VALIDATORS))));
-            copyType(blockDbBatch, indexDb, V1_TYPE_VALIDATOR_STATS, TYPE_VALIDATOR_STATS);
-            copyType(blockDbBatch, indexDb, V1_TYPE_BLOCK_HASH, TYPE_BLOCK_HASH);
-            copyType(blockDbBatch, indexDb, V1_TYPE_TRANSACTION_HASH, TYPE_TRANSACTION_HASH);
-            copyType(blockDbBatch, indexDb, V1_TYPE_ACCOUNT_TRANSACTION, TYPE_ACCOUNT_TRANSACTION);
-            blockDbBatch.add(
-                    ImmutablePair.of(Bytes.of(TYPE_ACTIVATED_FORKS), indexDb.get(Bytes.of(V1_TYPE_ACTIVATED_FORKS))));
-            copyType(blockDbBatch, indexDb, V1_TYPE_COINBASE_TRANSACTION_HASH, TYPE_COINBASE_TRANSACTION_HASH);
+            batch.add(Bytes.of(TYPE_LATEST_BLOCK_NUMBER), indexDb.get(Bytes.of(V1_TYPE_LATEST_BLOCK_NUMBER)));
+            batch.add(Bytes.of(TYPE_VALIDATORS), indexDb.get(Bytes.of(V1_TYPE_VALIDATORS)));
+            copyType(batch, indexDb, V1_TYPE_VALIDATOR_STATS, TYPE_VALIDATOR_STATS);
+            copyType(batch, indexDb, V1_TYPE_BLOCK_HASH, TYPE_BLOCK_HASH);
+            copyType(batch, indexDb, V1_TYPE_TRANSACTION_HASH, TYPE_TRANSACTION_HASH);
+            copyType(batch, indexDb, V1_TYPE_ACCOUNT_TRANSACTION, TYPE_ACCOUNT_TRANSACTION);
+            batch.add(Bytes.of(TYPE_ACTIVATED_FORKS), indexDb.get(Bytes.of(V1_TYPE_ACTIVATED_FORKS)));
+            copyType(batch, indexDb, V1_TYPE_COINBASE_TRANSACTION_HASH, TYPE_COINBASE_TRANSACTION_HASH);
 
             // TODO: merge accountDB into blockDB
 
             // TODO: merge delegateDB, voteDB into blockDB
 
             // set version byte
-            blockDbBatch.add(ImmutablePair.of(Bytes.of(TYPE_DATABASE_VERSION), Bytes.of(2)));
+            batch.add(Bytes.of(TYPE_DATABASE_VERSION), Bytes.of(2));
 
-            blockDb.updateBatch(blockDbBatch);
+            // write database
+            batch.flush();
 
             logger.info("Database upgraded to version 2.");
         }
 
-        private void copyType(List<Pair<byte[], byte[]>> batch, Database from, byte fromPrefix, byte toPrefix) {
+        private void copyType(DatabaseBatch batch, Database from, byte fromPrefix, byte toPrefix) {
             ClosableIterator<Entry<byte[], byte[]>> iterator = from.iterator(Bytes.of(fromPrefix));
             while (iterator.hasNext()) {
                 Entry<byte[], byte[]> entry = iterator.next();
@@ -943,7 +946,7 @@ public class BlockchainImpl implements Blockchain {
                     break;
                 }
                 toKey[0] = toPrefix;
-                batch.add(ImmutablePair.of(toKey, entry.getValue()));
+                batch.add(toKey, entry.getValue());
             }
         }
     }
