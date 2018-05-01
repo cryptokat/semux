@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2017-2018 The Semux Developers
+ *
+ * Distributed under the MIT software license, see the accompanying file
+ * LICENSE or https://opensource.org/licenses/mit-license.php
+ */
 package org.semux.db;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,8 +29,12 @@ public class DatabaseBatch {
         return instances.computeIfAbsent(database, DatabaseBatch::new);
     }
 
-    public void add(byte[] key, byte[] value) {
+    public void put(byte[] key, byte[] value) {
         updates.add(ImmutablePair.of(key, value));
+    }
+
+    public void delete(byte[] key) {
+        updates.add(ImmutablePair.of(key, null));
     }
 
     public synchronized void flush() {

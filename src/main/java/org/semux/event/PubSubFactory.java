@@ -10,18 +10,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PubSubFactory {
 
-    private static final PubSub defaultInstance = new PubSub("default");
-
-    private static final ConcurrentHashMap<String, PubSub> instances = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, PubSub> instances = new ConcurrentHashMap<>();
 
     private PubSubFactory() {
     }
 
     public static PubSub getDefault() {
-        return defaultInstance;
+        return get(PubSub.class);
     }
 
-    public static PubSub get(String name) {
-        return instances.computeIfAbsent(name, PubSub::new);
+    public static PubSub get(Class<?> clz) {
+        return instances.computeIfAbsent(clz, k -> new PubSub(k.getCanonicalName()));
+    }
+
+    public static void stopAll() {
+        instances.values().forEach(PubSub::stop);
     }
 }

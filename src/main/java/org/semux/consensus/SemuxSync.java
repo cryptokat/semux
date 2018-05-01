@@ -473,6 +473,7 @@ public class SemuxSync implements SyncManager {
 
             // [8] add block to chain
             chain.addBlock(block);
+            chain.onBlockAdded(block);
         } finally {
             writeLock.unlock();
         }

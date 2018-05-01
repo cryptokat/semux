@@ -178,7 +178,7 @@ public abstract class Launcher {
      */
     protected void setupPubSub() {
         PubSubFactory.getDefault().start();
-        registerShutdownHook("pubsub-default", () -> PubSubFactory.getDefault().stop());
+        registerShutdownHook("pubsub", PubSubFactory::stopAll);
     }
 
     /**

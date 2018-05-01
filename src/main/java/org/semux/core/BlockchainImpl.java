@@ -360,8 +360,7 @@ public class BlockchainImpl implements Blockchain {
         return -1;
     }
 
-    @Override
-    public synchronized void addBlock(Block block) {
+    public synchronized void addBlock(Block block, boolean flush) {
         long number = block.getNumber();
         byte[] hash = block.getHash();
         activateForks(number);
@@ -372,12 +371,13 @@ public class BlockchainImpl implements Blockchain {
         }
 
         // [1] update block
-        blockDB.put(Bytes.merge(TYPE_BLOCK_HEADER, Bytes.of(number)), block.toBytesHeader());
-        blockDB.put(Bytes.merge(TYPE_BLOCK_TRANSACTIONS, Bytes.of(number)), block.toBytesTransactions());
-        blockDB.put(Bytes.merge(TYPE_BLOCK_RESULTS, Bytes.of(number)), block.toBytesResults());
-        blockDB.put(Bytes.merge(TYPE_BLOCK_VOTES, Bytes.of(number)), block.toBytesVotes());
+        DatabaseBatch batch = DatabaseBatch.getBatch(blockDB);
+        batch.put(Bytes.merge(TYPE_BLOCK_HEADER, Bytes.of(number)), block.toBytesHeader());
+        batch.put(Bytes.merge(TYPE_BLOCK_TRANSACTIONS, Bytes.of(number)), block.toBytesTransactions());
+        batch.put(Bytes.merge(TYPE_BLOCK_RESULTS, Bytes.of(number)), block.toBytesResults());
+        batch.put(Bytes.merge(TYPE_BLOCK_VOTES, Bytes.of(number)), block.toBytesVotes());
 
-        blockDB.put(Bytes.merge(TYPE_BLOCK_HASH, hash), Bytes.of(number));
+        batch.put(Bytes.merge(TYPE_BLOCK_HASH, hash), Bytes.of(number));
 
         // [2] update transaction indices
         List<Transaction> txs = block.getTransactions();
@@ -393,7 +393,7 @@ public class BlockchainImpl implements Blockchain {
             enc.writeInt(txIndices.get(i).getLeft());
             enc.writeInt(txIndices.get(i).getRight());
 
-            blockDB.put(Bytes.merge(TYPE_TRANSACTION_HASH, tx.getHash()), enc.toBytes());
+            batch.put(Bytes.merge(TYPE_TRANSACTION_HASH, tx.getHash()), enc.toBytes());
 
             // [3] update transaction_by_account index
             addTransactionToAccount(tx, tx.getFrom());
@@ -413,8 +413,8 @@ public class BlockchainImpl implements Blockchain {
                     block.getTimestamp(),
                     Bytes.EMPTY_BYTES);
             tx.sign(Constants.COINBASE_KEY);
-            blockDB.put(Bytes.merge(TYPE_TRANSACTION_HASH, tx.getHash()), tx.toBytes());
-            blockDB.put(Bytes.merge(TYPE_COINBASE_TRANSACTION_HASH, Bytes.of(block.getNumber())), tx.getHash());
+            batch.put(Bytes.merge(TYPE_TRANSACTION_HASH, tx.getHash()), tx.toBytes());
+            batch.put(Bytes.merge(TYPE_COINBASE_TRANSACTION_HASH, Bytes.of(block.getNumber())), tx.getHash());
             addTransactionToAccount(tx, block.getCoinbase());
 
             // [5] update validator statistics
@@ -436,11 +436,16 @@ public class BlockchainImpl implements Blockchain {
 
         // [7] update latest_block
         latestBlock = block;
-        blockDB.put(Bytes.of(TYPE_LATEST_BLOCK_NUMBER), Bytes.of(number));
+        batch.put(Bytes.of(TYPE_LATEST_BLOCK_NUMBER), Bytes.of(number));
 
-        for (BlockchainListener listener : listeners) {
-            listener.onBlockAdded(block);
+        if (flush) {
+            batch.flush();
         }
+    }
+
+    @Override
+    public synchronized void addBlock(Block block) {
+        addBlock(block, true);
     }
 
     /**
@@ -467,6 +472,13 @@ public class BlockchainImpl implements Blockchain {
     @Override
     public void addListener(BlockchainListener listener) {
         listeners.add(listener);
+    }
+
+    @Override
+    public synchronized void onBlockAdded(Block block) {
+        for (BlockchainListener listener : listeners) {
+            listener.onBlockAdded(block);
+        }
     }
 
     @Override
@@ -915,13 +927,13 @@ public class BlockchainImpl implements Blockchain {
             DatabaseBatch batch = DatabaseBatch.getBatch(blockDb);
 
             // merge indexDB into blockDB
-            batch.add(Bytes.of(TYPE_LATEST_BLOCK_NUMBER), indexDb.get(Bytes.of(V1_TYPE_LATEST_BLOCK_NUMBER)));
-            batch.add(Bytes.of(TYPE_VALIDATORS), indexDb.get(Bytes.of(V1_TYPE_VALIDATORS)));
+            batch.put(Bytes.of(TYPE_LATEST_BLOCK_NUMBER), indexDb.get(Bytes.of(V1_TYPE_LATEST_BLOCK_NUMBER)));
+            batch.put(Bytes.of(TYPE_VALIDATORS), indexDb.get(Bytes.of(V1_TYPE_VALIDATORS)));
             copyType(batch, indexDb, V1_TYPE_VALIDATOR_STATS, TYPE_VALIDATOR_STATS);
             copyType(batch, indexDb, V1_TYPE_BLOCK_HASH, TYPE_BLOCK_HASH);
             copyType(batch, indexDb, V1_TYPE_TRANSACTION_HASH, TYPE_TRANSACTION_HASH);
             copyType(batch, indexDb, V1_TYPE_ACCOUNT_TRANSACTION, TYPE_ACCOUNT_TRANSACTION);
-            batch.add(Bytes.of(TYPE_ACTIVATED_FORKS), indexDb.get(Bytes.of(V1_TYPE_ACTIVATED_FORKS)));
+            batch.put(Bytes.of(TYPE_ACTIVATED_FORKS), indexDb.get(Bytes.of(V1_TYPE_ACTIVATED_FORKS)));
             copyType(batch, indexDb, V1_TYPE_COINBASE_TRANSACTION_HASH, TYPE_COINBASE_TRANSACTION_HASH);
 
             // TODO: merge accountDB into blockDB
@@ -929,7 +941,7 @@ public class BlockchainImpl implements Blockchain {
             // TODO: merge delegateDB, voteDB into blockDB
 
             // set version byte
-            batch.add(Bytes.of(TYPE_DATABASE_VERSION), Bytes.of(2));
+            batch.put(Bytes.of(TYPE_DATABASE_VERSION), Bytes.of(2));
 
             // write database
             batch.flush();
@@ -946,7 +958,7 @@ public class BlockchainImpl implements Blockchain {
                     break;
                 }
                 toKey[0] = toPrefix;
-                batch.add(toKey, entry.getValue());
+                batch.put(toKey, entry.getValue());
             }
         }
     }

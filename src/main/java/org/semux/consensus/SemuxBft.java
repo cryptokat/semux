@@ -960,6 +960,7 @@ public class SemuxBft implements Consensus {
 
             // [8] add block to chain
             chain.addBlock(block);
+            chain.onBlockAdded(block);
         } finally {
             lock.unlock();
         }

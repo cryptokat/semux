@@ -121,7 +121,7 @@ public class PubSub {
 
         eventProcessingThread = new EventProcessingThread();
         eventProcessingThread.start();
-        logger.info("PubSub service started");
+        logger.debug("PubSub service started");
     }
 
     /**
@@ -129,7 +129,7 @@ public class PubSub {
      */
     public synchronized void stop() {
         eventProcessingThread.interrupt();
-        logger.info("PubSub service stopped");
+        logger.debug("PubSub service stopped");
     }
 
     /**

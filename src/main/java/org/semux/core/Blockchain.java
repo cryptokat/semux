@@ -207,6 +207,11 @@ public interface Blockchain {
     void addListener(BlockchainListener listener);
 
     /**
+     * Triggered when there is a new block added and written into the database.
+     */
+    void onBlockAdded(Block block);
+
+    /**
      * Checks whether a fork is activated at a certain blockchain height.
      *
      * @param number
