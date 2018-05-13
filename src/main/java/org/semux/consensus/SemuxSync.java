@@ -424,8 +424,8 @@ public class SemuxSync implements SyncManager {
             return false;
         }
 
-        // [4] evaluate votes
-        return validateBlockVotes(block);
+        // [4] evaluate votes per validator set update
+        return header.getNumber() % config.getValidatorUpdateInterval() != 0 || validateBlockVotes(block);
     }
 
     protected boolean validateBlockVotes(Block block) {
