@@ -1,0 +1,4 @@
+
+site_name: Semux Documentations
+repo_url: https://github.com/semuxproject/semux
+markdown_extensions: [meta, toc, tables, fenced_code]
