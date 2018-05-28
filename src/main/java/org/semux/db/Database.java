@@ -8,6 +8,8 @@ package org.semux.db;
 
 import java.nio.file.Path;
 import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.semux.util.ClosableIterator;
@@ -46,12 +48,11 @@ public interface Database {
     void delete(byte[] key);
 
     /**
-     * Updates a list of key value pairs.
-     * 
-     * @param pairs
-     *            key value pairs; pair with null value, will be deleted
+     * Begins a database write batch.
+     *
+     * @param batchLambda database writes are done inside this lambda.
      */
-    void updateBatch(Iterable<Pair<byte[], byte[]>> pairs);
+    void batch(Predicate<Boolean> batchLambda);
 
     /**
      * Returns all the keys.<br>

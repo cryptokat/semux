@@ -52,8 +52,9 @@ public class DelegateStateImpl implements DelegateState {
     private static final int ADDRESS_LEN = 20;
 
     protected final Blockchain chain;
-
+    /** @deprecated merged into block db since v2 */
     protected Database delegateDB;
+    /** @deprecated merged into block db since v2 */
     protected Database voteDB;
     protected DelegateStateImpl prev;
 

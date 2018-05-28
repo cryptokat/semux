@@ -100,13 +100,21 @@ public class BlockchainImpl implements Blockchain {
     private static final byte TYPE_COINBASE_TRANSACTION_HASH = 0x17;
 
     // v1 index db keys
+    /** @deprecated */
     private static final byte V1_TYPE_LATEST_BLOCK_NUMBER = 0x00;
+    /** @deprecated */
     private static final byte V1_TYPE_VALIDATORS = 0x01;
+    /** @deprecated */
     private static final byte V1_TYPE_VALIDATOR_STATS = 0x02;
+    /** @deprecated */
     private static final byte V1_TYPE_BLOCK_HASH = 0x03;
+    /** @deprecated */
     private static final byte V1_TYPE_TRANSACTION_HASH = 0x04;
+    /** @deprecated */
     private static final byte V1_TYPE_ACCOUNT_TRANSACTION = 0x05;
+    /** @deprecated */
     private static final byte V1_TYPE_ACTIVATED_FORKS = 0x06;
+    /** @deprecated */
     private static final byte V1_TYPE_COINBASE_TRANSACTION_HASH = 0x07;
 
     // block db version byte
@@ -446,6 +454,10 @@ public class BlockchainImpl implements Blockchain {
     @Override
     public synchronized void addBlock(Block block) {
         addBlock(block, true);
+    }
+
+    public synchronized void commitBlockAndState() {
+
     }
 
     /**

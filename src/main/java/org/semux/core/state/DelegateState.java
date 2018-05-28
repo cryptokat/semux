@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.semux.core.Amount;
+import org.semux.db.DatabaseBatch;
 import org.semux.util.ByteArray;
 
 public interface DelegateState {
@@ -103,6 +104,13 @@ public interface DelegateState {
      * Commits all updates since last snapshot.
      */
     void commit();
+
+    /**
+     * Commits all updates since last snapshot into a database batch
+     *
+     * @param batch
+     */
+    void commit(DatabaseBatch batch);
 
     /**
      * Reverts all updates since last snapshot.

@@ -7,6 +7,7 @@
 package org.semux.core.state;
 
 import org.semux.core.Amount;
+import org.semux.db.DatabaseBatch;
 
 public interface AccountState {
 
@@ -90,7 +91,7 @@ public interface AccountState {
     /**
      * Commits all updates since last snapshot.
      */
-    void commit();
+    void commit(DatabaseBatch batch);
 
     /**
      * Reverts all updates since last snapshot.

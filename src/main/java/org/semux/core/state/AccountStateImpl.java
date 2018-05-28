@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.semux.core.Amount;
 import org.semux.db.Database;
+import org.semux.db.DatabaseBatch;
 import org.semux.util.ByteArray;
 import org.semux.util.Bytes;
 
@@ -30,9 +31,18 @@ import org.semux.util.Bytes;
  */
 public class AccountStateImpl implements AccountState {
 
-    protected static final byte TYPE_ACCOUNT = 0;
-    protected static final byte TYPE_CODE = 1;
-    protected static final byte TYPE_STORAGE = 2;
+    // account state index: 0x30 ~ 0x32
+    private static final byte TYPE_ACCOUNT_STATE_ACCOUNT = 0x30;
+    private static final byte TYPE_ACCOUNT_STATE_CODE = 0x31;
+    private static final byte TYPE_ACCOUNT_STATE_STORAGE = 0x32;
+
+    // v1 account db index
+    /** @deprecated */
+    private static final byte TYPE_ACCOUNT = 0;
+    /** @deprecated */
+    private static final byte TYPE_CODE = 1;
+    /** @deprecated */
+    private static final byte TYPE_STORAGE = 2;
 
     protected Database accountDB;
     protected AccountStateImpl prev;
@@ -134,7 +144,7 @@ public class AccountStateImpl implements AccountState {
     }
 
     @Override
-    public void commit() {
+    public void commit(DatabaseBatch batch) {
         synchronized (updates) {
             if (prev == null) {
                 for (Map.Entry<ByteArray, byte[]> entry : updates.entrySet()) {
